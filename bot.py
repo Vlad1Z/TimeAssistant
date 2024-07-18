@@ -2,14 +2,18 @@ from telebot import TeleBot, types
 from config import TELEBOT_TOKEN, id_chat_owner
 from handlers.StartHandler import StartHandler
 from handlers.BookingHandler import BookingHandler
-from handlers.CalendarHandler import CalendarHandler
+from CalendarHandler.MainMenuHandler import MainMenuHandler
+from CalendarHandler.UnlockTimeHandler import UnlockTimeHandler
+from CalendarHandler.BookingListHandler import BookingListHandler
 
 bot = TeleBot(TELEBOT_TOKEN)
 
 # Экземпляры обработчиков
 start_handler = StartHandler(bot)
 booking_handler = BookingHandler(bot)
-calendar_handler = CalendarHandler(bot, booking_handler)
+main_menu_handler = MainMenuHandler(bot)
+unlock_handler = UnlockTimeHandler(bot, booking_handler)
+bookings_handler = BookingListHandler(bot, booking_handler)
 
 # Функция для регистрации обработчиков
 def register_handlers():
@@ -37,7 +41,7 @@ def register_handlers():
             # Логика обработки выбора услуг
             bot.send_message(message.chat.id, "Наши услуги: ...")
         elif message.text == '🕒 Настройки расписания' and str(message.chat.id) == id_chat_owner:
-            calendar_handler.handle_calendar(message)
+            main_menu_handler.handle_calendar(message)
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith('type_'))
     def handle_type(call):
@@ -58,7 +62,7 @@ def register_handlers():
     def handle_unlock_date(call):
         print(f"handle_unlock_date called with data: {call.data}")
         date = call.data.split('_')[2]
-        calendar_handler.show_unlock_times(call, date)
+        unlock_handler.show_unlock_times(call, date)
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith('unlock_time_'))
     def handle_unlock_time_slots(call):
@@ -66,35 +70,35 @@ def register_handlers():
         parts = call.data.split('_')
         date = parts[2]
         time = parts[3]
-        calendar_handler.unlock_time(call, date, time)
+        unlock_handler.unlock_time(call, date, time)
 
     @bot.callback_query_handler(func=lambda call: call.data == 'unlock_time')
     def handle_unlock_time(call):
         print("handle_unlock_time called")
-        calendar_handler.show_unlock_dates(call)
+        unlock_handler.show_unlock_dates(call)
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith('done_unlock_'))
     def handle_done_unlock(call):
         print(f"handle_done_unlock called with data: {call.data}")
         date = call.data.split('_')[2]
-        calendar_handler.confirm_unlock(call, date)
+        unlock_handler.confirm_unlock(call, date)
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith('back_to_unlock_dates'))
     def handle_back_to_unlock_dates(call):
         print(f"handle_back_to_unlock_dates called with data: {call.data}")
         date = call.data.split('_')[2]
-        calendar_handler.show_unlock_dates(call)
+        unlock_handler.show_unlock_dates(call)
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith('back_to_calendar'))
     def handle_back_to_calendar(call):
         print("handle_back_to_calendar called")
-        calendar_handler.handle_calendar(call.message)
+        main_menu_handler.handle_calendar(call.message)
 
     # Обработчик команды для очистки расписания
     @bot.callback_query_handler(func=lambda call: call.data == 'clear_schedule')
     def handle_clear_schedule(call):
         print("handle_clear_schedule called")
-        calendar_handler.clear_schedule(call)
+        unlock_handler.clear_schedule(call)
 
     @bot.callback_query_handler(func=lambda call: call.data == 'back_to_main')
     def handle_back_to_main(call):
@@ -103,7 +107,7 @@ def register_handlers():
 
     @bot.callback_query_handler(func=lambda call: call.data == 'handle_calendar')
     def handle_calendar(call):
-        calendar_handler.handle_calendar(call.message)
+        main_menu_handler.handle_calendar(call.message)
         markup = types.InlineKeyboardMarkup()
         unlock_button = types.InlineKeyboardButton(text="Освободить время под записи", callback_data='unlock_time')
         get_bookings_button = types.InlineKeyboardButton(text="Прислать список записей", callback_data='get_bookings')

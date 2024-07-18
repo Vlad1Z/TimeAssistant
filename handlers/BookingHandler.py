@@ -43,8 +43,8 @@ class BookingHandler:
         """Отображает пользователю типы записи."""
         print("show_booking_types called")
         markup = types.InlineKeyboardMarkup()
-        type1_button = types.InlineKeyboardButton(text="Тип 1 (Консультация)", callback_data='type_1')
-        type2_button = types.InlineKeyboardButton(text="Тип 2 (Процедура)", callback_data='type_2')
+        type1_button = types.InlineKeyboardButton(text="Тип 1", callback_data='type_1')
+        type2_button = types.InlineKeyboardButton(text="Тип 2", callback_data='type_2')
         back_button = types.InlineKeyboardButton(text="Назад", callback_data='back_to_main')
         markup.add(type1_button)
         markup.add(type2_button)
