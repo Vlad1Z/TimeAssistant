@@ -1,5 +1,7 @@
 from telebot import types
 from datetime import datetime
+from db import save_appointment
+
 
 class BookingHandler:
     def __init__(self, bot, start_handler):
