@@ -1,6 +1,8 @@
 from telebot import types
 from datetime import datetime
 from db import save_appointment
+from config import id_chat_owner
+
 
 
 class BookingHandler:
@@ -85,19 +87,34 @@ class BookingHandler:
             self.handle_cancel(message)
 
     def handle_save(self, message):
-        """Сохраняет запись."""
+        """Сохраняет запись и отправляет уведомление админу."""
+        # Сохраняем запись в базу данных
+        save_appointment(
+            user_id=message.from_user.id,
+            username=message.from_user.username,
+            first_name=message.from_user.first_name,
+            last_name=message.from_user.last_name,
+            phone_number=None,
+            # Если вы хотите, чтобы администратор получал телефонный номер, его нужно будет добавить в обработку.
+            date=self.selected_date.strftime('%d.%m.%y'),
+            time=self.selected_time,
+            comments=self.comments,
+            status='Записан'
+            # Можно передавать статус как 'Записан', или добавить логику статуса в зависимости от ситуации.
+        )
+
+        # Уведомление администратора о новой записи
+        self.bot.send_message(
+            id_chat_owner,  # Отправляем админу
+            f"📩 Новая запись: \nДата: {self.selected_date.strftime('%d.%m.%y')}\nВремя: {self.selected_time}\nКомментарии: {self.comments} 📝"
+        )
+
         self.bot.send_message(
             message.chat.id,
             "Запись успешно сохранена! ✅\n\nНовая запись:\n"
             f"Дата: {self.selected_date.strftime('%d.%m.%y')}\n"
             f"Время: {self.selected_time}\n"
             f"Комментарии: {self.comments} 📝"
-        )
-
-        # Уведомление администратора о новой записи
-        self.bot.send_message(
-            message.chat.id,
-            f"📩 Новая запись: \nДата: {self.selected_date.strftime('%d.%m.%y')}\nВремя: {self.selected_time}\nКомментарии: {self.comments} 📝"
         )
 
         # Убираем клавиатуру с кнопками

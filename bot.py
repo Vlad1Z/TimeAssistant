@@ -48,7 +48,12 @@ def handle_user_request(message):
 @bot.message_handler(content_types=['contact'])
 def handle_contact_message(message):
     """Передает контактное сообщение в UserRequestHandler."""
+    # Логируем полученные данные для отладки
+    print("Contact received:", message.contact)
+
+    # Передаем данные в UserRequestHandler
     user_request_handler.handle_contact(message)
+
 
 # Запуск бота
 if __name__ == "__main__":
