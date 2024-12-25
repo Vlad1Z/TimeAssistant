@@ -1,4 +1,5 @@
 from telebot import types
+from db import save_appointment
 
 class UserRequestHandler:
     def __init__(self, bot, admin_chat_id):
@@ -22,8 +23,14 @@ class UserRequestHandler:
         if message.contact:
             phone_number = message.contact.phone_number
             user_name = message.contact.first_name or "Пользователь"
-            user_username = message.from_user.username or "❌ Не указан"  # Извлекаем username из from_user
+            user_username = message.from_user.username or "❌ Не указан"
             user_id = message.contact.user_id
+
+            # Сохранить данные в базу
+            # Добавляем аргумент "status", например, "ожидает"
+            # В обработчике контакта
+            save_appointment(user_id, user_username, user_name, message.contact.last_name, phone_number, None, None,
+                             None, "Ожидает")
 
             # Уведомление администратора
             admin_message = (

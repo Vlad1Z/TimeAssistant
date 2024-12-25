@@ -1,16 +1,58 @@
 import sqlite3
+from datetime import datetime, timedelta
+import pytz
 
-def save_appointment(user_id, username, first_name, last_name, phone_number, date, time, comments, status):
+def create_table():
+    """Создаёт таблицу с актуальной схемой."""
+    conn = sqlite3.connect('appointments.db')
+    cursor = conn.cursor()
+
+    # Удаляем таблицу, если она существует
+    cursor.execute("DROP TABLE IF EXISTS records;")
+
+    # Создаём таблицу с правильными колонками
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS records (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        telegram_user_id INTEGER NOT NULL,
+        username TEXT,
+        first_name TEXT,
+        last_name TEXT,
+        phone_number TEXT,
+        appointment_date TEXT,
+        appointment_time TEXT,
+        request_date TEXT,
+        comments TEXT,
+        status TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+def get_local_time():
+    """Возвращает текущее время с учётом часового пояса."""
+    tz = pytz.timezone('Europe/Moscow')  # Ваш часовой пояс (например, Москва)
+    local_time = datetime.now(tz)
+    return local_time.strftime('%Y-%m-%d %H:%M:%S')
+
+def save_appointment(user_id, username, first_name, last_name, phone_number, date, time, comments, status="ожидает"):
     # Подключаемся к базе данных
     conn = sqlite3.connect('appointments.db')
     cursor = conn.cursor()
 
+    # Получаем время запроса с учётом часового пояса
+    request_date = get_local_time()
+
     # Добавляем запись в таблицу
     cursor.execute("""
-    INSERT INTO records (user_id, username, first_name, last_name, phone_number, date, time, comments, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (user_id, username, first_name, last_name, phone_number, date, time, comments, status))
+    INSERT INTO records (telegram_user_id, username, first_name, last_name, phone_number, appointment_date, appointment_time, request_date, comments, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (user_id, username, first_name, last_name, phone_number, date, time, request_date, comments, status))
 
     # Сохраняем изменения и закрываем соединение
     conn.commit()
     conn.close()
+
+# Вызовем функцию для создания таблицы
+create_table()
