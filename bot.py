@@ -11,9 +11,9 @@ bot = TeleBot(TELEBOT_TOKEN)
 # Экземпляры обработчиков
 start_handler = StartHandler(bot)
 booking_handler = BookingHandler(bot)
+bookings_handler = BookingListHandler(bot, booking_handler)
 main_menu_handler = MainMenuHandler(bot)
 unlock_handler = UnlockTimeHandler(bot, booking_handler)
-bookings_handler = BookingListHandler(bot, booking_handler)
 
 # Функция для регистрации обработчиков
 def register_handlers():

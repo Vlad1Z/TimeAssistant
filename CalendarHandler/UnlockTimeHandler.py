@@ -8,6 +8,12 @@ class UnlockTimeHandler:
         self.selected_times = {}
 
     def show_unlock_dates(self, call):
+        """
+                Отображает доступные даты для разблокировки слотов.
+                Генерирует календарь на три недели вперед, где каждая дата является кнопкой,
+                по которой можно выбрать дату для дальнейшей разблокировки времени.
+                :param call: Объект вызова с данными о сообщении пользователя.
+                """
         print("show_unlock_dates called")
         markup = types.InlineKeyboardMarkup()
         start_date = datetime.date.today()
@@ -23,6 +29,14 @@ class UnlockTimeHandler:
                                    text="Выберите дату для разблокировки слотов:", reply_markup=markup)
 
     def show_unlock_times(self, call, date):
+        """
+                Отображает доступные временные слоты для выбранной даты.
+                Для каждого слота, доступного для разблокировки, создается кнопка,
+                на которой можно выбрать конкретное время. Отображаются только те слоты,
+                которые еще не заблокированы.
+                :param call: Объект вызова с данными о сообщении пользователя.
+                :param date: Дата для отображения слотов.
+                """
         print(f"show_unlock_times called with date: {date}")
         date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
         if date not in self.selected_times:
@@ -57,6 +71,14 @@ class UnlockTimeHandler:
                                    reply_markup=markup)
 
     def unlock_time(self, call, date, time):
+        """
+                Обрабатывает добавление или удаление выбранных временных слотов для разблокировки.
+                Если слот уже выбран, он будет удален, если нет — добавлен.
+                После обновления списка выбранных слотов, метод вызывает повторное отображение слотов для выбранной даты.
+                :param call: Объект вызова с данными о сообщении пользователя.
+                :param date: Дата для разблокировки слота.
+                :param time: Время для разблокировки слота.
+                """
         print(f"unlock_time called with date: {date}, time: {time}")
         date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
         time = datetime.datetime.strptime(time, "%H:%M").time()
@@ -72,6 +94,13 @@ class UnlockTimeHandler:
         self.show_unlock_times(call, str(date))
 
     def confirm_unlock(self, call, date):
+        """
+                Подтверждает разблокировку выбранных временных слотов для указанной даты.
+                После успешного подтверждения все выбранные слоты разблокируются и отправляется уведомление.
+                Метод очищает список выбранных слотов для данной даты и возвращает пользователя к выбору дат.
+                :param call: Объект вызова с данными о сообщении пользователя.
+                :param date: Дата, для которой нужно подтвердить разблокировку слотов.
+                """
         print(f"confirm_unlock called with date: {date}")
         date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
         for time in self.selected_times[date]:
