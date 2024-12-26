@@ -35,6 +35,26 @@ def handle_start(message):
 
     start_handler.main_menu(message)
 
+@bot.callback_query_handler(func=lambda call: call.data.startswith("record_"))
+def handle_admin_booking(call):
+    """Обрабатывает нажатие на кнопку 'Записать'."""
+    try:
+        record_id = int(call.data.split("_")[-1])  # Получаем ID записи из callback_data
+        print(f"Callback data received: {call.data}, record ID: {record_id}")
+
+        # Проверяем существование записи в базе данных
+        from db import check_appointment_exists
+        if not check_appointment_exists(record_id):
+            bot.answer_callback_query(call.id, "❌ Запись не найдена. Возможно, она была удалена.")
+            return
+
+        bot.answer_callback_query(call.id, "Начинаем процесс записи клиента!")
+        booking_handler.start_admin_booking(call, record_id)  # Передаём управление в BookingHandler
+    except Exception as e:
+        print(f"Ошибка в обработчике callback_query: {e}")
+
+
+
 # Обработчик для записи клиента
 @bot.message_handler(func=lambda message: message.text == "📝 Записать клиента")
 def handle_booking(message):

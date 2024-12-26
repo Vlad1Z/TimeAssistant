@@ -1,5 +1,7 @@
 from telebot import types
 from db import save_appointment
+from db import save_appointment, get_last_appointment_id
+
 
 class UserRequestHandler:
     def __init__(self, bot, admin_chat_id):
@@ -26,11 +28,17 @@ class UserRequestHandler:
             user_username = message.from_user.username or "❌ Не указан"
             user_id = message.contact.user_id
 
-            # Сохранить данные в базу
-            # Добавляем аргумент "status", например, "ожидает"
-            # В обработчике контакта
+            # Сохраняем данные в базу и получаем ID записи
             save_appointment(user_id, user_username, user_name, message.contact.last_name, phone_number, None, None,
-                             None, "Ожидает")
+                             None, "ожидает")
+            record_id = get_last_appointment_id(user_id)
+
+            if not record_id:
+                self.bot.send_message(
+                    message.chat.id,
+                    "❌ Произошла ошибка при сохранении записи. Попробуйте позже."
+                )
+                return
 
             # Уведомление администратора
             admin_message = (
@@ -41,27 +49,13 @@ class UserRequestHandler:
                 f"🆔 ID клиента: {user_id}\n\n"
                 "💡 Нажмите на одну из кнопок ниже, чтобы записать клиента или написать ему сообщение."
             )
-
             markup = types.InlineKeyboardMarkup()
             markup.add(
-                types.InlineKeyboardButton("📝 Записать", callback_data=f"record_user_{user_id}"),
+                types.InlineKeyboardButton("📝 Записать", callback_data=f"record_{record_id}"),
                 types.InlineKeyboardButton("✉️ Написать сообщение", url=f"tg://user?id={user_id}")
             )
 
             self.bot.send_message(self.admin_chat_id, admin_message, reply_markup=markup)
-
-            # Подтверждение клиенту
-            self.bot.send_message(
-                message.chat.id,
-                "✅ Спасибо за ваш номер! Мы свяжемся с вами в ближайшее время, чтобы обсудить детали записи. 😊",
-                reply_markup=types.ReplyKeyboardRemove()
-            )
-        else:
-            # Сообщение клиенту, если контакт не отправлен
-            self.bot.send_message(
-                message.chat.id,
-                "❌ Не удалось получить ваш номер телефона. Пожалуйста, попробуйте снова. 📞"
-            )
 
 
 

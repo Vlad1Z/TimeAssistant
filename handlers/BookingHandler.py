@@ -2,6 +2,7 @@ from telebot import types
 from datetime import datetime
 from db import save_appointment
 from config import id_chat_owner
+from db import update_appointment
 
 
 
@@ -21,24 +22,142 @@ class BookingHandler:
         )
         self.bot.register_next_step_handler(message, self.handle_date_selection)
 
-    def handle_date_selection(self, message):
-        """Обрабатывает выбор даты."""
+    def start_admin_booking(self, call, record_id):
+        """Начинает процесс записи администратора для клиента."""
+        self.current_record_id = record_id  # Сохраняем текущий ID записи
+        self.bot.send_message(
+            call.message.chat.id,
+            "📅 Укажите дату для записи (в формате ДД.ММ.ГГ):"
+        )
+        self.bot.register_next_step_handler(call.message, self.process_admin_date)
+
+    def process_admin_date(self, message):
+        """Обрабатывает ввод даты администратором."""
         try:
             self.selected_date = datetime.strptime(message.text, '%d.%m.%y').date()
             if self.selected_date < datetime.today().date():
                 raise ValueError("Дата не может быть в прошлом.")
             self.bot.send_message(
                 message.chat.id,
-                f"Вы выбрали дату: {self.selected_date.strftime('%d.%m.%y')} 🗓️. Теперь укажите время ⏰."
+                f"Вы выбрали дату: {self.selected_date.strftime('%d.%m.%y')} 🗓️. Теперь укажите время (в формате ЧЧ:ММ):"
             )
-            self.bot.register_next_step_handler(message, self.handle_time_selection)
-        except ValueError as e:
-            error_message = str(e) if str(e) else "Неверный формат даты. Пожалуйста, введите дату в формате ДД.ММ.ГГ."
+            self.bot.register_next_step_handler(message, self.process_admin_time)
+        except ValueError:
             self.bot.send_message(
                 message.chat.id,
-                error_message + " ❌"
+                "❌ Неверный формат даты или дата в прошлом. Укажите дату в формате ДД.ММ.ГГ."
             )
-            self.bot.register_next_step_handler(message, self.handle_date_selection)
+            self.bot.register_next_step_handler(message, self.process_admin_date)
+
+    def process_admin_time(self, message):
+        """Обрабатывает ввод времени администратором."""
+        try:
+            self.selected_time = message.text
+            datetime.strptime(self.selected_time, '%H:%M')  # Проверка формата времени
+            self.bot.send_message(
+                message.chat.id,
+                f"Вы выбрали время: {self.selected_time} ⏰. Теперь добавьте комментарий (например, вид процедуры):"
+            )
+            self.bot.register_next_step_handler(message, self.process_admin_comment)
+        except ValueError:
+            self.bot.send_message(
+                message.chat.id,
+                "❌ Неверный формат времени. Укажите время в формате ЧЧ:ММ. Например: 09:00."
+            )
+            self.bot.register_next_step_handler(message, self.process_admin_time)
+
+    def process_admin_comment(self, message):
+        """Обрабатывает ввод комментария администратором и отправляет данные на подтверждение."""
+        self.comments = message.text
+
+        # Извлекаем данные пользователя из базы
+        from db import get_user_data_by_record_id
+        user_data = get_user_data_by_record_id(self.current_record_id)
+
+        # Проверяем, нашли ли данные
+        if not user_data:
+            self.bot.send_message(message.chat.id, "❌ Ошибка: Данные пользователя не найдены.")
+            return
+
+        # Формируем сообщение с профилем пользователя
+        profile_data = (
+            f"📩 Запрос на запись:\n"
+            f"👤 Имя: {user_data['first_name'] or 'Не указано'}\n"
+            f"📱 Телефон: {user_data['phone_number'] or 'Не указан'}\n"
+            f"📧 Username: {user_data['username'] or 'Не указан'}\n"
+            f"🆔 ID клиента: {user_data['telegram_user_id']}\n\n"
+        )
+
+        # Формируем данные, введённые администратором
+        admin_input_data = (
+            f"📅 Дата: {self.selected_date.strftime('%d.%m.%y')}\n"
+            f"⏰ Время: {self.selected_time}\n"
+            f"💬 Комментарий: {self.comments}\n\n"
+        )
+
+        # Объединяем всё в одно сообщение
+        confirmation_message = (
+            f"{profile_data}"
+            f"Данные для записи:\n"
+            f"{admin_input_data}"
+            "✅ Нажмите 'Подтвердить', чтобы сохранить запись, или '❌ Отменить', чтобы отказаться."
+        )
+
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("✅ Подтвердить", "❌ Отменить")
+
+        self.bot.send_message(
+            message.chat.id,
+            confirmation_message,
+            reply_markup=markup
+        )
+        self.bot.register_next_step_handler(message, self.finalize_admin_booking)
+
+    def finalize_admin_booking(self, message):
+        """Сохраняет данные или отменяет процесс."""
+        markup = types.ReplyKeyboardRemove()  # Убираем клавиатуру
+
+        if message.text == "✅ Подтвердить":
+            # Сохраняем данные в базе
+            update_appointment(
+                user_id=self.current_record_id,
+                appointment_date=self.selected_date.strftime('%Y-%m-%d'),
+                appointment_time=self.selected_time,
+                status="Записан",
+                comment=self.comments
+            )
+
+            # Уведомляем администратора
+            self.bot.send_message(
+                message.chat.id,
+                f"✅ Пользователь с ID {self.current_record_id} успешно записан!",
+                reply_markup=markup  # Убираем клавиатуру
+            )
+
+            # Уведомляем пользователя
+            user_data = get_user_data_by_record_id(self.current_record_id)
+            if user_data:
+                self.bot.send_message(
+                    user_data["telegram_user_id"],
+                    f"🎉 Вы успешно записаны!\n\n"
+                    f"📅 Дата: {self.selected_date.strftime('%d.%m.%y')}\n"
+                    f"⏰ Время: {self.selected_time}\n"
+                    f"📍 Адрес: [Укажите адрес]\n"
+                    f"📞 Контакт: [Укажите телефон]\n\n"
+                    "Спасибо за запись! 😊"
+                )
+        elif message.text == "❌ Отменить":
+            self.bot.send_message(
+                message.chat.id,
+                "❌ Запись отменена.",
+                reply_markup=markup  # Убираем клавиатуру
+            )
+        else:
+            self.bot.send_message(
+                message.chat.id,
+                "❌ Некорректный выбор. Пожалуйста, нажмите '✅ Подтвердить' или '❌ Отменить'.",
+                reply_markup=markup  # Убираем клавиатуру
+            )
 
     def handle_time_selection(self, message):
         """Запрашивает выбор времени."""
@@ -58,13 +177,17 @@ class BookingHandler:
             self.bot.register_next_step_handler(message, self.handle_time_selection)
 
     def handle_comments(self, message):
-        """Запрашивает комментарии, такие как вид процедуры."""
+        """Запрашивает комментарии и отправляет данные на подтверждение."""
         self.comments = message.text
         confirmation_message = (
+            f"📩 Подтвердите данные записи:\n\n"
+            f"👤 Имя: {message.from_user.first_name or 'Не указано'}\n"
+            f"📧 Username: {message.from_user.username or 'Не указан'}\n"
+            f"🆔 Telegram ID: {message.from_user.id}\n"
             f"📅 Дата: {self.selected_date.strftime('%d.%m.%y')}\n"
             f"⏰ Время: {self.selected_time}\n"
-            f"💬 Комментарии: {self.comments}\n\n"
-            "Выберите действие:"
+            f"💬 Комментарий: {self.comments}\n\n"
+            "✅ Нажмите 'Подтвердить', чтобы сохранить запись, или 'Отменить', чтобы отказаться."
         )
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add("✅ Сохранить", "✏️ Редактировать", "❌ Отменить")
@@ -74,6 +197,56 @@ class BookingHandler:
             confirmation_message,
             reply_markup=markup
         )
+        self.bot.register_next_step_handler(message, self.final_confirmation)
+
+    def final_confirmation(self, message):
+        """Обрабатывает финальное подтверждение записи."""
+        if message.text == "✅ Подтвердить":
+            # Обновляем запись в базе данных
+            save_appointment(
+                user_id=message.from_user.id,
+                username=message.from_user.username,
+                first_name=message.from_user.first_name,
+                last_name=message.from_user.last_name,
+                phone_number=None,  # Добавьте телефон, если требуется
+                date=self.selected_date.strftime('%Y-%m-%d'),
+                time=self.selected_time,
+                comments=self.comments,
+                status='Записан'
+            )
+
+            # Уведомляем администратора
+            self.bot.send_message(
+                id_chat_owner,
+                f"✅ Запись подтверждена:\n\n"
+                f"👤 Имя: {message.from_user.first_name or 'Не указано'}\n"
+                f"📧 Username: {message.from_user.username or 'Не указан'}\n"
+                f"📅 Дата: {self.selected_date.strftime('%d.%m.%y')}\n"
+                f"⏰ Время: {self.selected_time}\n"
+                f"💬 Комментарий: {self.comments}\n"
+            )
+
+            # Уведомляем пользователя
+            self.bot.send_message(
+                message.chat.id,
+                f"🎉 Вы успешно записаны!\n\n"
+                f"📅 Дата: {self.selected_date.strftime('%d.%m.%y')}\n"
+                f"⏰ Время: {self.selected_time}\n"
+                f"📍 Адрес: [Укажите адрес]\n"
+                f"📞 Контакт: [Укажите телефон]\n\n"
+                "Спасибо за запись! 😊"
+            )
+
+            # Возвращаем в главное меню
+            self.start_handler.main_menu(message)
+        elif message.text == "❌ Отменить":
+            self.handle_cancel(message)
+        else:
+            self.bot.send_message(
+                message.chat.id,
+                "❌ Некорректный выбор. Нажмите '✅ Подтвердить' или '❌ Отменить'."
+            )
+            self.bot.register_next_step_handler(message, self.final_confirmation)
 
     def process_action(self, message):
         """Обрабатывает нажатие кнопок действия: Сохранить, Редактировать, Отменить."""
