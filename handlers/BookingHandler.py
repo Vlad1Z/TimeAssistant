@@ -84,7 +84,7 @@ class BookingHandler:
         # Формируем сообщение с профилем пользователя
         profile_data = (
             f"📩 Запрос на запись:\n"
-            f"👤 Имя: {user_data['first_name'] or 'Не указано'}\n"
+            f"👤 Имя: {user_data['first_name'] or 'Не указано'} {user_data['last_name'] or ''}\n"
             f"📱 Телефон: {user_data['phone_number'] or 'Не указан'}\n"
             f"📧 Username: {user_data['username'] or 'Не указан'}\n"
             f"🆔 ID клиента: {user_data['telegram_user_id']}\n\n"
@@ -183,7 +183,7 @@ class BookingHandler:
         self.comments = message.text
         confirmation_message = (
             f"📩 Подтвердите данные записи:\n\n"
-            f"👤 Имя: {message.from_user.first_name or 'Не указано'}\n"
+            f"👤 Имя: {message.from_user.first_name or 'Не указано'} {message.from_user.last_name or ''}\n"
             f"📧 Username: {message.from_user.username or 'Не указан'}\n"
             f"🆔 Telegram ID: {message.from_user.id}\n"
             f"📅 Дата: {self.selected_date.strftime('%d.%m.%y')}\n"
@@ -221,7 +221,7 @@ class BookingHandler:
             self.bot.send_message(
                 id_chat_owner,
                 f"✅ Запись подтверждена:\n\n"
-                f"👤 Имя: {message.from_user.first_name or 'Не указано'}\n"
+                f"👤 Имя: {message.from_user.first_name or 'Не указано'} {message.from_user.last_name or ''}\n"
                 f"📧 Username: {message.from_user.username or 'Не указан'}\n"
                 f"📅 Дата: {self.selected_date.strftime('%d.%m.%y')}\n"
                 f"⏰ Время: {self.selected_time}\n"

@@ -43,7 +43,7 @@ class UserRequestHandler:
             # Уведомление администратора
             admin_message = (
                 f"📩 Запрос на запись:\n"
-                f"👤 Имя: {user_name}\n"
+                f"👤 Имя: {message.from_user.first_name or 'Не указано'} {message.from_user.last_name or ''}\n"
                 f"📱 Телефон: {phone_number}\n"
                 f"📧 Username: {user_username}\n"
                 f"🆔 ID клиента: {user_id}\n\n"
