@@ -4,6 +4,7 @@ import config
 from handlers.StartHandler import StartHandler
 from handlers.BookingHandler import BookingHandler
 from handlers.UserRequestHandler import UserRequestHandler
+from db import save_user_visit
 
 # Настроим логирование
 logging.basicConfig(level=logging.INFO)
@@ -23,7 +24,15 @@ user_request_handler = UserRequestHandler(bot, ADMIN_CHAT_ID)
 # Обработчик команды /start
 @bot.message_handler(commands=['start'])
 def handle_start(message):
-    """Обрабатывает команду /start, чтобы отобразить главное меню."""
+    """Обрабатывает команду /start (при первом взаимодействии с ботом)."""
+    user_id = message.from_user.id
+    username = message.from_user.username
+    first_name = message.from_user.first_name
+    last_name = message.from_user.last_name
+
+    # Логируем информацию о пользователе
+    save_user_visit(user_id, username, first_name, last_name)
+
     start_handler.main_menu(message)
 
 # Обработчик для записи клиента

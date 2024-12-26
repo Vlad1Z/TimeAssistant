@@ -56,3 +56,56 @@ def save_appointment(user_id, username, first_name, last_name, phone_number, dat
 
 # Вызовем функцию для создания таблицы
 create_table()
+
+
+def create_table():
+    """Создаёт таблицу для записи пользователей, которые заходят в бота."""
+    conn = sqlite3.connect('appointments.db')
+    cursor = conn.cursor()
+
+    # Удаляем таблицу, если она существует
+    cursor.execute("DROP TABLE IF EXISTS user_visits;")
+
+    # Создаём таблицу для записи информации о пользователях
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_visits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        telegram_user_id INTEGER NOT NULL,
+        username TEXT,
+        first_name TEXT,
+        last_name TEXT,
+        visit_date TEXT,
+        visit_time TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+def get_local_time():
+    """Возвращает текущее время с учётом часового пояса."""
+    tz = pytz.timezone('Europe/Moscow')  # Ваш часовой пояс (например, Москва)
+    local_time = datetime.now(tz)
+    return local_time.strftime('%Y-%m-%d %H:%M:%S')
+
+def save_user_visit(user_id, username, first_name, last_name):
+    """Логирует посещение пользователя в боте."""
+    conn = sqlite3.connect('appointments.db')
+    cursor = conn.cursor()
+
+    # Получаем время посещения с учётом часового пояса
+    visit_date = get_local_time()
+    visit_time = datetime.now(pytz.timezone('Europe/Moscow')).strftime('%H:%M:%S')
+
+    # Добавляем запись в таблицу посещений
+    cursor.execute("""
+    INSERT INTO user_visits (telegram_user_id, username, first_name, last_name, visit_date, visit_time)
+    VALUES (?, ?, ?, ?, ?, ?)
+    """, (user_id, username, first_name, last_name, visit_date, visit_time))
+
+    # Сохраняем изменения и закрываем соединение
+    conn.commit()
+    conn.close()
+
+# Вызовем функцию для создания таблицы
+create_table()
