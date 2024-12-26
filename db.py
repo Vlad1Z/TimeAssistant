@@ -156,6 +156,7 @@ def get_user_data_by_record_id(record_id):
         }
     return None
 
+
 # ===== Инициализация базы данных =====
 if __name__ == "__main__":
     create_tables()
