@@ -57,6 +57,22 @@ def save_appointment(user_id, username, first_name, last_name, phone_number, dat
 # Вызовем функцию для создания таблицы
 create_table()
 
+def update_appointment(user_id, appointment_date, appointment_time, status, comment=None):
+    """Обновляет запись в базе данных."""
+    conn = sqlite3.connect('appointments.db')
+    cursor = conn.cursor()
+
+    # Обновляем запись по user_id
+    cursor.execute("""
+    UPDATE records
+    SET appointment_date = ?, appointment_time = ?, status = ?, comments = ?
+    WHERE telegram_user_id = ? AND status = 'ожидает'
+    """, (appointment_date, appointment_time, status, comment, user_id))
+
+    conn.commit()
+    conn.close()
+
+
 
 def create_table():
     """Создаёт таблицу для записи пользователей, которые заходят в бота."""
