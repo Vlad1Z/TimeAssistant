@@ -1,6 +1,5 @@
 from telebot import types
-from db import save_appointment
-from db import save_appointment, get_last_appointment_id
+from db import save_appointment, get_last_appointment_id, save_message_id_to_db
 
 
 class UserRequestHandler:
@@ -55,7 +54,12 @@ class UserRequestHandler:
                 types.InlineKeyboardButton("✉️ Написать сообщение", url=f"tg://user?id={user_id}")
             )
 
-            self.bot.send_message(self.admin_chat_id, admin_message, reply_markup=markup)
+            # Отправляем сообщение администратору
+            sent_message = self.bot.send_message(self.admin_chat_id, admin_message, reply_markup=markup)
+
+            # Сохраняем message_id в базу данных
+            save_message_id_to_db(record_id, sent_message.message_id)  # Создайте метод для сохранения
+
 
 
 

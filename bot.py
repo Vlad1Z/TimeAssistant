@@ -71,6 +71,15 @@ def handle_booking_confirmation(call):
             )
             return
 
+        # Удаляем сообщение с заявкой пользователя
+        try:
+            # Получаем message_id сообщения с заявкой
+            message_id_request = user_data.get("message_id")
+            if message_id_request:
+                bot.delete_message(call.message.chat.id, message_id_request)
+        except Exception as e:
+            print(f"Не удалось удалить сообщение с заявкой: {e}")
+
         # Обновляем запись в базе данных
         update_appointment(
             user_id=booking_handler.current_record_id,  # ID записи
@@ -100,7 +109,7 @@ def handle_booking_confirmation(call):
             )
         )
 
-        # Редактируем сообщение
+        # Редактируем текущее сообщение с кнопками
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
@@ -129,6 +138,9 @@ def handle_booking_confirmation(call):
             chat_id=call.message.chat.id,
             message_id=call.message.message_id
         )
+
+
+
 
 
 
