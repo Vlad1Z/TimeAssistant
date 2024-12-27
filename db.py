@@ -93,7 +93,7 @@ def save_appointment(user_id, username, first_name, last_name, phone_number, dat
 
 
 def save_message_id_to_db(record_id, message_id):
-    """Сохраняет message_id для конкретной записи в базе данных."""
+    """Сохраняет message_id для конкретной записи."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
@@ -173,7 +173,7 @@ def get_user_data_by_record_id(record_id):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT telegram_user_id, username, first_name, last_name, phone_number
+        SELECT telegram_user_id, username, first_name, last_name, phone_number, message_id
         FROM records
         WHERE id = ?;
     """, (record_id,))
@@ -186,9 +186,11 @@ def get_user_data_by_record_id(record_id):
             "username": result[1],
             "first_name": result[2],
             "last_name": result[3],
-            "phone_number": result[4]
+            "phone_number": result[4],
+            "message_id": result[5]  # Добавляем message_id в результат
         }
     return None
+
 
 
 # ===== Инициализация базы данных =====

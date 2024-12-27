@@ -61,6 +61,9 @@ def handle_booking_confirmation(call):
     bot.answer_callback_query(call.id)  # Убираем индикатор загрузки
 
     if call.data == "confirm_booking":
+        # Проверяем record_id
+        print(f"Текущий record_id: {booking_handler.current_record_id}")
+
         # Получаем данные пользователя из базы
         user_data = get_user_data_by_record_id(booking_handler.current_record_id)
 
@@ -69,16 +72,21 @@ def handle_booking_confirmation(call):
                 call.message.chat.id,
                 "❌ Ошибка: данные пользователя не найдены."
             )
+            print(f"Пользователь с record_id {booking_handler.current_record_id} не найден.")
             return
 
-        # Удаляем сообщение с заявкой пользователя
-        try:
-            # Получаем message_id сообщения с заявкой
-            message_id_request = user_data.get("message_id")
-            if message_id_request:
+        # Проверяем наличие message_id
+        message_id_request = user_data.get("message_id")
+        print(f"Полученный message_id: {message_id_request}")
+
+        if message_id_request:
+            try:
                 bot.delete_message(call.message.chat.id, message_id_request)
-        except Exception as e:
-            print(f"Не удалось удалить сообщение с заявкой: {e}")
+                print(f"Сообщение с message_id {message_id_request} успешно удалено.")
+            except Exception as e:
+                print(f"Не удалось удалить сообщение с заявкой: {e}")
+        else:
+            print("Ошибка: message_id отсутствует в базе.")
 
         # Обновляем запись в базе данных
         update_appointment(
