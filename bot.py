@@ -1,5 +1,6 @@
 import logging
 from telebot import TeleBot
+from telebot import types
 import config
 from handlers.StartHandler import StartHandler
 from handlers.BookingHandler import BookingHandler
@@ -60,13 +61,6 @@ def handle_booking_confirmation(call):
     bot.answer_callback_query(call.id)  # Убираем индикатор загрузки
 
     if call.data == "confirm_booking":
-        # Удаляем сообщение с кнопками
-        bot.edit_message_text(
-            "✅ Запись успешно подтверждена!",
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id
-        )
-
         # Получаем данные пользователя из базы
         user_data = get_user_data_by_record_id(booking_handler.current_record_id)
 
@@ -86,15 +80,56 @@ def handle_booking_confirmation(call):
             comment=booking_handler.comments
         )
 
+        # Формируем сообщение с полной информацией о клиенте
+        updated_message = (
+            "✅ Запись успешно подтверждена!\n\n"
+            f"👤 Имя: {user_data['first_name']} {user_data['last_name']}\n"
+            f"📱 Телефон: {user_data['phone_number']}\n"
+            f"📧 Username: @{user_data['username']}\n"
+            f"🆔 ID клиента: {user_data['telegram_user_id']}\n\n"
+            f"📅 Дата: {booking_handler.selected_date.strftime('%d.%m.%y')}\n"
+            f"⏰ Время: {booking_handler.selected_time}\n"
+            f"💬 Комментарий: {booking_handler.comments}"
+        )
+
+        # Создаём кнопку "Написать"
+        markup = types.InlineKeyboardMarkup()
+        markup.add(
+            types.InlineKeyboardButton(
+                "Написать", url=f"tg://user?id={user_data['telegram_user_id']}"
+            )
+        )
+
+        # Редактируем сообщение
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=updated_message,
+            reply_markup=markup,
+            parse_mode="HTML"
+        )
+
         # Уведомляем клиента о записи
         bot.send_message(
             user_data["telegram_user_id"],
             f"🎉 Вы успешно записаны!\n\n"
             f"📅 Дата: {booking_handler.selected_date.strftime('%d.%m.%y')}\n"
             f"⏰ Время: {booking_handler.selected_time}\n"
+            f"📍 Адрес: [Укажите адрес]\n"
+            f"📞 Контакт: [Укажите телефон]\n"
             f"💬 Комментарий: {booking_handler.comments}\n\n"
-            "Спасибо за запись! 😊"
+            "Спасибо за запись! 😊",
+            parse_mode="HTML"
         )
+
+    elif call.data == "cancel_booking":
+        # Удаляем сообщение с кнопками
+        bot.edit_message_text(
+            "❌ Запись отменена.",
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id
+        )
+
 
 
 # Обработчик для записи клиента
