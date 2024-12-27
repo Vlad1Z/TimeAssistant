@@ -111,19 +111,6 @@ class BookingHandler:
             )
             return
 
-        # Сохраняем данные в базу
-        save_appointment(
-            user_id=user_data["telegram_user_id"],
-            username=user_data["username"],
-            first_name=user_data["first_name"],
-            last_name=user_data["last_name"],
-            phone_number=user_data["phone_number"],
-            date=self.selected_date.strftime('%Y-%m-%d'),
-            time=self.selected_time,
-            comments=self.comments,
-            status="Записан"
-        )
-
         # Отправляем сообщение с подтверждением
         confirmation_message = (
             f"📩 Запрос на запись:\n"

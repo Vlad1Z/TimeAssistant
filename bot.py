@@ -4,7 +4,8 @@ import config
 from handlers.StartHandler import StartHandler
 from handlers.BookingHandler import BookingHandler
 from handlers.UserRequestHandler import UserRequestHandler
-from db import save_user_visit
+from db import save_user_visit, get_user_data_by_record_id, save_appointment, update_appointment
+
 
 # Настроим логирование
 logging.basicConfig(level=logging.INFO)
@@ -56,25 +57,45 @@ def handle_admin_booking(call):
 @bot.callback_query_handler(func=lambda call: call.data in ["confirm_booking", "cancel_booking"])
 def handle_booking_confirmation(call):
     """Обрабатывает нажатие инлайн-кнопок."""
-    bot.answer_callback_query(call.id)  # Убираем индикатор загрузки в Telegram
+    bot.answer_callback_query(call.id)  # Убираем индикатор загрузки
 
     if call.data == "confirm_booking":
-        # Логика для подтверждения
+        # Удаляем сообщение с кнопками
         bot.edit_message_text(
             "✅ Запись успешно подтверждена!",
             chat_id=call.message.chat.id,
             message_id=call.message.message_id
         )
-        # Здесь можно добавить логику сохранения записи в базу
-        # update_appointment(...)
 
-    elif call.data == "cancel_booking":
-        # Логика для отмены
-        bot.edit_message_text(
-            "❌ Запись отменена.",
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id
+        # Получаем данные пользователя из базы
+        user_data = get_user_data_by_record_id(booking_handler.current_record_id)
+
+        if not user_data:
+            bot.send_message(
+                call.message.chat.id,
+                "❌ Ошибка: данные пользователя не найдены."
+            )
+            return
+
+        # Обновляем запись в базе данных
+        update_appointment(
+            user_id=booking_handler.current_record_id,  # ID записи
+            appointment_date=booking_handler.selected_date.strftime('%Y-%m-%d'),
+            appointment_time=booking_handler.selected_time,
+            status="Записан",
+            comment=booking_handler.comments
         )
+
+        # Уведомляем клиента о записи
+        bot.send_message(
+            user_data["telegram_user_id"],
+            f"🎉 Вы успешно записаны!\n\n"
+            f"📅 Дата: {booking_handler.selected_date.strftime('%d.%m.%y')}\n"
+            f"⏰ Время: {booking_handler.selected_time}\n"
+            f"💬 Комментарий: {booking_handler.comments}\n\n"
+            "Спасибо за запись! 😊"
+        )
+
 
 # Обработчик для записи клиента
 @bot.message_handler(func=lambda message: message.text == "📝 Записать клиента")
