@@ -45,9 +45,10 @@ class UserRequestHandler:
                 f"👤 Имя: {message.from_user.first_name or 'Не указано'} {message.from_user.last_name or ''}\n"
                 f"📱 Телефон: {phone_number}\n"
                 f"📧 Username: {user_username}\n"
-                f"🆔 ID клиента: {user_id}\n\n"
+                f"🆔 ID клиента: `<code>{user_id}</code>`\n\n"
                 "💡 Нажмите на одну из кнопок ниже, чтобы записать клиента или написать ему сообщение."
             )
+
             markup = types.InlineKeyboardMarkup()
             markup.add(
                 types.InlineKeyboardButton("📝 Записать", callback_data=f"record_{record_id}"),

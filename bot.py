@@ -103,7 +103,7 @@ def handle_booking_confirmation(call):
             f"👤 Имя: {user_data['first_name']} {user_data['last_name']}\n"
             f"📱 Телефон: {user_data['phone_number']}\n"
             f"📧 Username: @{user_data['username']}\n"
-            f"🆔 ID клиента: {user_data['telegram_user_id']}\n\n"
+            f"🆔 ID клиента: <code>{user_data['telegram_user_id']}</code>\n\n"
             f"📅 Дата: {booking_handler.selected_date.strftime('%d.%m.%y')}\n"
             f"⏰ Время: {booking_handler.selected_time}\n"
             f"💬 Комментарий: {booking_handler.comments}"
@@ -146,11 +146,6 @@ def handle_booking_confirmation(call):
             chat_id=call.message.chat.id,
             message_id=call.message.message_id
         )
-
-
-
-
-
 
 # Обработчик для записи клиента
 @bot.message_handler(func=lambda message: message.text == "📝 Записать клиента")
