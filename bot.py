@@ -53,7 +53,28 @@ def handle_admin_booking(call):
     except Exception as e:
         print(f"Ошибка в обработчике callback_query: {e}")
 
+@bot.callback_query_handler(func=lambda call: call.data in ["confirm_booking", "cancel_booking"])
+def handle_booking_confirmation(call):
+    """Обрабатывает нажатие инлайн-кнопок."""
+    bot.answer_callback_query(call.id)  # Убираем индикатор загрузки в Telegram
 
+    if call.data == "confirm_booking":
+        # Логика для подтверждения
+        bot.edit_message_text(
+            "✅ Запись успешно подтверждена!",
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id
+        )
+        # Здесь можно добавить логику сохранения записи в базу
+        # update_appointment(...)
+
+    elif call.data == "cancel_booking":
+        # Логика для отмены
+        bot.edit_message_text(
+            "❌ Запись отменена.",
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id
+        )
 
 # Обработчик для записи клиента
 @bot.message_handler(func=lambda message: message.text == "📝 Записать клиента")

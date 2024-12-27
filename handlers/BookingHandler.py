@@ -91,58 +91,53 @@ class BookingHandler:
 
     def process_admin_comment(self, message):
         """Обрабатывает ввод комментария администратором и отправляет данные на подтверждение."""
-        self.comments = message.text
-
-        # Удаляем предыдущее сообщение (ввод комментария)
+        # Удаляем предыдущее сообщение (ответ пользователя)
         self.bot.delete_message(message.chat.id, message.message_id)
 
+        # Удаляем вопрос, если он был сохранен
         if hasattr(self, 'last_bot_message_id') and self.last_bot_message_id:
             self.bot.delete_message(message.chat.id, self.last_bot_message_id)
 
         self.comments = message.text
 
-        # Извлекаем данные пользователя из базы
-        from db import get_user_data_by_record_id
+        # Получаем данные пользователя из базы
         user_data = get_user_data_by_record_id(self.current_record_id)
 
-        # Проверяем, нашли ли данные
         if not user_data:
-            self.bot.send_message(message.chat.id, "❌ Ошибка: Данные пользователя не найдены.")
+            self.bot.send_message(
+                message.chat.id,
+                "❌ Ошибка: Данные пользователя не найдены."
+            )
             return
 
-        # Формируем сообщение с профилем пользователя
-        profile_data = (
+        # Формируем сообщение с подтверждением
+        confirmation_message = (
             f"📩 Запрос на запись:\n"
             f"👤 Имя: {user_data['first_name'] or 'Не указано'} {user_data['last_name'] or ''}\n"
             f"📱 Телефон: {user_data['phone_number'] or 'Не указан'}\n"
             f"📧 Username: {user_data['username'] or 'Не указан'}\n"
             f"🆔 ID клиента: {user_data['telegram_user_id']}\n\n"
-        )
-
-        # Формируем данные, введённые администратором
-        admin_input_data = (
+            f"Данные для записи:\n"
             f"📅 Дата: {self.selected_date.strftime('%d.%m.%y')}\n"
             f"⏰ Время: {self.selected_time}\n"
             f"💬 Комментарий: {self.comments}\n\n"
-        )
-
-        # Объединяем всё в одно сообщение
-        confirmation_message = (
-            f"{profile_data}"
-            f"Данные для записи:\n"
-            f"{admin_input_data}"
             "✅ Нажмите 'Подтвердить', чтобы сохранить запись, или '❌ Отменить', чтобы отказаться."
         )
 
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add("✅ Подтвердить", "❌ Отменить")
+        # Создаем инлайн-кнопки
+        markup = types.InlineKeyboardMarkup()
+        markup.add(
+            types.InlineKeyboardButton("✅ Подтвердить", callback_data="confirm_booking"),
+            types.InlineKeyboardButton("❌ Отменить", callback_data="cancel_booking")
+        )
 
-        self.bot.send_message(
+        # Отправляем сообщение с кнопками
+        bot_message = self.bot.send_message(
             message.chat.id,
             confirmation_message,
             reply_markup=markup
         )
-        self.bot.register_next_step_handler(message, self.finalize_admin_booking)
+        self.last_bot_message_id = bot_message.message_id
 
     def finalize_admin_booking(self, message):
         """Сохраняет данные или отменяет процесс."""
