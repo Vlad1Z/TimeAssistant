@@ -113,11 +113,11 @@ class BookingHandler:
 
         # Отправляем сообщение с подтверждением
         confirmation_message = (
-            f"📩 Запрос на запись:\n"
+            f"📩 Запрос на запись (Заявка №{self.current_record_id}):\n"
             f"👤 Имя: {user_data['first_name'] or 'Не указано'} {user_data['last_name'] or ''}\n"
             f"📱 Телефон: {user_data['phone_number'] or 'Не указан'}\n"
             f"📧 Username: {user_data['username'] or 'Не указан'}\n"
-            f"🆔 ID клиента: {user_data['telegram_user_id']}\n\n"
+            f"🆔 ID клиента: <code>{user_data['telegram_user_id']}</code>\n\n"
             f"Данные для записи:\n"
             f"📅 Дата: {self.selected_date.strftime('%d.%m.%y')}\n"
             f"⏰ Время: {self.selected_time}\n"

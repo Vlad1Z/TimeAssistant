@@ -139,13 +139,72 @@ def handle_booking_confirmation(call):
             parse_mode="HTML"
         )
 
+
+
+
+
     elif call.data == "cancel_booking":
-        # Удаляем сообщение с кнопками
-        bot.edit_message_text(
-            "❌ Запись отменена.",
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id
+
+        # Получаем данные пользователя из базы
+
+        user_data = get_user_data_by_record_id(booking_handler.current_record_id)
+
+        if not user_data:
+            bot.send_message(
+
+                call.message.chat.id,
+
+                "❌ Ошибка: данные пользователя не найдены."
+
+            )
+
+            print(f"Пользователь с record_id {booking_handler.current_record_id} не найден.")
+
+            return
+
+        # Проверяем наличие message_id
+
+        message_id_request = user_data.get("message_id")
+
+        print(f"Полученный message_id: {message_id_request}")
+
+        if message_id_request:
+
+            try:
+                # Удаляем сообщение, используя chat_id администратора
+                bot.delete_message(call.message.chat.id, message_id_request)
+                print(f"Сообщение с message_id {message_id_request} успешно удалено.")
+            except Exception as e:
+                print(f"Не удалось удалить сообщение с заявкой: {e}")
+        else:
+            print("Ошибка: message_id отсутствует в базе.")
+
+        # Обновляем запись в базе данных
+        update_appointment(
+            user_id=booking_handler.current_record_id,  # ID записи
+            appointment_date=None,
+            appointment_time=None,
+            status="Отклонена",
+            comment=None
         )
+
+        # Формируем сообщение с информацией об отклонении
+        decline_message = (
+            f"❌ Запись отклонена! (Заявка №{booking_handler.current_record_id})\n\n"
+            f"👤 Имя: {user_data['first_name']} {user_data['last_name']}\n"
+            f"📱 Телефон: {user_data['phone_number']}\n"
+            f"📧 Username: @{user_data['username']}\n"
+            f"🆔 ID клиента: <code>{user_data['telegram_user_id']}</code>\n"
+        )
+
+        # Отправляем сообщение о статусе
+        bot.send_message(
+            chat_id=call.message.chat.id,
+            text=decline_message,
+            parse_mode="HTML"
+        )
+        print(f"Статус записи {booking_handler.current_record_id} обновлён на 'Отклонена'.")
+
 
 # Обработчик для записи клиента
 @bot.message_handler(func=lambda message: message.text == "📝 Записать клиента")
