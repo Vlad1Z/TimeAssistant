@@ -27,49 +27,78 @@ class BookingHandler:
     def start_admin_booking(self, call, record_id):
         """Начинает процесс записи администратора для клиента."""
         self.current_record_id = record_id  # Сохраняем текущий ID записи
-        self.bot.send_message(
+        bot_message = self.bot.send_message(
             call.message.chat.id,
             "📅 Укажите дату для записи (в формате ДД.ММ.ГГ):"
         )
+        self.last_bot_message_id = bot_message.message_id  # Сохраняем ID сообщения
         self.bot.register_next_step_handler(call.message, self.process_admin_date)
 
     def process_admin_date(self, message):
         """Обрабатывает ввод даты администратором."""
+        # Удаляем предыдущее сообщение (ответ пользователя и вопрос)
+        self.bot.delete_message(message.chat.id, message.message_id)
+
+        if hasattr(self, 'last_bot_message_id') and self.last_bot_message_id:
+            self.bot.delete_message(message.chat.id, self.last_bot_message_id)
+
         try:
             self.selected_date = datetime.strptime(message.text, '%d.%m.%y').date()
             if self.selected_date < datetime.today().date():
                 raise ValueError("Дата не может быть в прошлом.")
-            self.bot.send_message(
+
+            # Сохраняем новое сообщение с вопросом
+            bot_message = self.bot.send_message(
                 message.chat.id,
                 f"Вы выбрали дату: {self.selected_date.strftime('%d.%m.%y')} 🗓️. Теперь укажите время (в формате ЧЧ:ММ):"
             )
+            self.last_bot_message_id = bot_message.message_id
             self.bot.register_next_step_handler(message, self.process_admin_time)
         except ValueError:
-            self.bot.send_message(
+            bot_message = self.bot.send_message(
                 message.chat.id,
                 "❌ Неверный формат даты или дата в прошлом. Укажите дату в формате ДД.ММ.ГГ."
             )
+            self.last_bot_message_id = bot_message.message_id
             self.bot.register_next_step_handler(message, self.process_admin_date)
 
     def process_admin_time(self, message):
         """Обрабатывает ввод времени администратором."""
+        # Удаляем предыдущее сообщение (ответ пользователя и вопрос)
+        self.bot.delete_message(message.chat.id, message.message_id)
+
+        if hasattr(self, 'last_bot_message_id') and self.last_bot_message_id:
+            self.bot.delete_message(message.chat.id, self.last_bot_message_id)
+
         try:
             self.selected_time = message.text
             datetime.strptime(self.selected_time, '%H:%M')  # Проверка формата времени
-            self.bot.send_message(
+
+            # Сохраняем сообщение с новым вопросом
+            bot_message = self.bot.send_message(
                 message.chat.id,
                 f"Вы выбрали время: {self.selected_time} ⏰. Теперь добавьте комментарий (например, вид процедуры):"
             )
+            self.last_bot_message_id = bot_message.message_id
             self.bot.register_next_step_handler(message, self.process_admin_comment)
         except ValueError:
-            self.bot.send_message(
+            bot_message = self.bot.send_message(
                 message.chat.id,
                 "❌ Неверный формат времени. Укажите время в формате ЧЧ:ММ. Например: 09:00."
             )
+            self.last_bot_message_id = bot_message.message_id
             self.bot.register_next_step_handler(message, self.process_admin_time)
 
     def process_admin_comment(self, message):
         """Обрабатывает ввод комментария администратором и отправляет данные на подтверждение."""
+        self.comments = message.text
+
+        # Удаляем предыдущее сообщение (ввод комментария)
+        self.bot.delete_message(message.chat.id, message.message_id)
+
+        if hasattr(self, 'last_bot_message_id') and self.last_bot_message_id:
+            self.bot.delete_message(message.chat.id, self.last_bot_message_id)
+
         self.comments = message.text
 
         # Извлекаем данные пользователя из базы
