@@ -271,16 +271,22 @@ def handle_view_users(message):
     user_statistics_handler.show_statistics(message)
 
 
+
 @bot.callback_query_handler(func=lambda call: call.data in ["unique_users", "repeat_visits", "inactive_users"])
 def handle_statistics_detail(call):
-    """Обрабатывает нажатие на кнопки статистики."""
+    """Обрабатывает нажатие на ссылки статистики."""
     bot.answer_callback_query(call.id)  # Убираем индикатор загрузки
     user_statistics_handler.handle_detailed_statistics(call)
+
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callback(call):
     log_user_action(user_id=call.message.chat.id, username=call.from_user.username, action_type="button_click", action_details=call.data)
 
+@bot.callback_query_handler(func=lambda call: call.data == "back_to_stats")
+def handle_back_to_stats(call):
+    """Возвращает в главное меню статистики."""
+    user_statistics_handler.show_statistics(call.message)
 
 
 # Запуск бота

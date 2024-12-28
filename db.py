@@ -159,7 +159,7 @@ def save_user_visit(user_id, username, first_name, last_name):
     cursor = conn.cursor()
 
     visit_date = datetime.now(pytz.timezone(TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
-    unique_until = (datetime.now(pytz.timezone(TIMEZONE)) + timedelta(days=3)).strftime('%Y-%m-%d %H:%M:%S')
+    unique_until = (datetime.now(pytz.timezone(TIMEZONE)) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
 
     # Проверяем, существует ли пользователь в таблице
     cursor.execute("""
@@ -226,7 +226,7 @@ def get_unique_users():
     cursor.execute("""
         SELECT telegram_user_id, username, first_name, last_name, visit_date, unique_until
         FROM user_visits
-        WHERE unique_until >= ?;
+        WHERE unique_until > ?;  -- Дата должна быть в будущем
     """, (current_time,))
 
     users = cursor.fetchall()
@@ -247,8 +247,10 @@ def get_unique_users():
 
 
 def get_repeat_visits():
+    """Возвращает количество пользователей с повторными посещениями."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+
     cursor.execute("""
         SELECT COUNT(*) FROM (
             SELECT telegram_user_id, COUNT(*) as visit_count
@@ -261,31 +263,41 @@ def get_repeat_visits():
     conn.close()
     return result
 
-def get_average_time_between_visits():
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT AVG(time_diff) FROM (
-            SELECT telegram_user_id, 
-                   JULIANDAY(MAX(visit_date)) - JULIANDAY(MIN(visit_date)) AS time_diff
-            FROM user_visits
-            GROUP BY telegram_user_id
-        );
-    """)
-    result = cursor.fetchone()[0]
-    conn.close()
-    return f"{result:.2f} дней" if result else "Нет данных"
+
+
+
 
 def get_inactive_users():
+    """Возвращает список неактивных пользователей (не заходивших более 30 дней)."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+
+    # Получаем текущую дату и время
+    current_time = datetime.now(pytz.timezone(TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
+
+    # Фильтруем пользователей, которые неактивны более 30 дней
     cursor.execute("""
-        SELECT COUNT(*) FROM user_visits
-        WHERE JULIANDAY('now') - JULIANDAY(visit_date) > 30;
-    """)
-    result = cursor.fetchone()[0]
+        SELECT telegram_user_id, username, first_name, last_name, visit_date, unique_until
+        FROM user_visits
+        WHERE visit_date <= datetime(?, '-30 days');
+    """, (current_time,))
+
+    users = cursor.fetchall()
     conn.close()
-    return result
+
+    # Преобразуем данные в удобный формат
+    return [
+        {
+            "telegram_user_id": user[0],
+            "username": user[1],
+            "first_name": user[2],
+            "last_name": user[3],
+            "visit_date": user[4],
+            "unique_until": user[5],
+        }
+        for user in users
+    ]
+
 
 def log_user_action(user_id, username, action_type, action_details=None):
     conn = sqlite3.connect(DB_NAME)
@@ -293,21 +305,21 @@ def log_user_action(user_id, username, action_type, action_details=None):
 
     # Текущее время для логирования
     action_time = datetime.now(pytz.timezone(TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
+    unique_until = (datetime.now(pytz.timezone(TIMEZONE)) + timedelta(days=3)).strftime('%Y-%m-%d %H:%M:%S')
 
-    # Логируем действие пользователя
+    # Обновляем или создаем запись
     cursor.execute("""
-        INSERT INTO user_visits (
-            telegram_user_id, username, visit_date, unique_until, last_action
-        )
+        INSERT INTO user_visits (telegram_user_id, username, visit_date, unique_until, last_action)
         VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(telegram_user_id) DO UPDATE SET
             visit_date = excluded.visit_date,
             unique_until = excluded.unique_until,
             last_action = excluded.last_action;
-    """, (user_id, username, action_time, action_time, action_type))
+    """, (user_id, username, action_time, unique_until, action_type))
 
     conn.commit()
     conn.close()
+
 
 
 # ===== Инициализация базы данных =====
