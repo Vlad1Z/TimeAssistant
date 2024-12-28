@@ -116,7 +116,7 @@ class BookingHandler:
             f"📩 Запрос на запись (Заявка №{self.current_record_id}):\n"
             f"👤 Имя: {user_data['first_name'] or 'Не указано'} {user_data['last_name'] or ''}\n"
             f"📱 Телефон: {user_data['phone_number'] or 'Не указан'}\n"
-            f"📧 Username: {user_data['username'] or 'Не указан'}\n"
+            f"📧 Username: @{user_data['username'] or 'Не указан'}\n"
             f"🆔 ID клиента: <code>{user_data['telegram_user_id']}</code>\n\n"
             f"Данные для записи:\n"
             f"📅 Дата: {self.selected_date.strftime('%d.%m.%y')}\n"
@@ -136,7 +136,8 @@ class BookingHandler:
         self.bot.send_message(
             message.chat.id,
             confirmation_message,
-            reply_markup=markup
+            reply_markup=markup,
+            parse_mode="HTML"  # Указываем HTML для обработки тега <code>
         )
 
 

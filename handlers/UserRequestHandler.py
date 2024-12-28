@@ -25,7 +25,7 @@ class UserRequestHandler:
             phone_number = message.contact.phone_number
             user_name = message.contact.first_name or "Пользователь"
             user_username = message.from_user.username or "❌ Не указан"
-            user_id = message.contact.user_id
+            user_id = message.contact.user_id or "Не указан"
 
             # Сохраняем данные в базу и получаем ID записи
             save_appointment(user_id, user_username, user_name, message.contact.last_name, phone_number, None, None,
@@ -44,7 +44,7 @@ class UserRequestHandler:
                 f"📩 Запрос на запись (Заявка №{record_id}):\n"
                 f"👤 Имя: {message.from_user.first_name or 'Не указано'} {message.from_user.last_name or ''}\n"
                 f"📱 Телефон: {phone_number}\n"
-                f"📧 Username: {user_username}\n"
+                f"📧 Username: @{user_username}\n"
                 f"🆔 ID клиента: <code>{user_id}</code>\n\n"
                 "💡 Нажмите на одну из кнопок ниже, чтобы записать клиента или написать ему сообщение."
             )
@@ -55,11 +55,25 @@ class UserRequestHandler:
                 types.InlineKeyboardButton("✉️ Написать сообщение", url=f"tg://user?id={user_id}")
             )
 
-            # Отправляем сообщение администратору
-            sent_message = self.bot.send_message(self.admin_chat_id, admin_message, reply_markup=markup)
+            # Отправляем сообщение администратору с корректным parse_mode
+            sent_message = self.bot.send_message(
+                self.admin_chat_id,
+                admin_message,
+                reply_markup=markup,
+                parse_mode="HTML"  # Здесь указываем HTML, чтобы теги корректно обрабатывались
+            )
 
             # Сохраняем message_id в базу данных
-            save_message_id_to_db(record_id, sent_message.message_id)  # Создайте метод для сохранения
+            save_message_id_to_db(record_id, sent_message.message_id)
+
+            # Отправляем сообщение пользователю
+            self.bot.send_message(
+                message.chat.id,
+                "💖 Мы свяжемся с вами совсем скоро, чтобы обсудить все детали. 😊\n\n"
+                "📱 Номер нужен для связи в мессенджерах, а если не получится, то мы попробуем вам позвонить.",
+                parse_mode="HTML"
+            )
+
 
 
 
