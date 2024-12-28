@@ -265,44 +265,13 @@ def handle_view_users(message):
     user_statistics_handler.show_statistics(message)
 
 
-@bot.callback_query_handler(
-    func=lambda call: call.data in ["unique_users", "repeat_visits", "inactive_users", "peak_hours"])
+@bot.callback_query_handler(func=lambda call: call.data in ["unique_users", "repeat_visits", "inactive_users"])
 def handle_statistics_detail(call):
     """Обрабатывает нажатие на кнопки статистики."""
     bot.answer_callback_query(call.id)  # Убираем индикатор загрузки
+    user_statistics_handler.handle_detailed_statistics(call)
 
-    if call.data == "unique_users":
-        result = get_unique_users()
-        if result:
-            detail_message = "👥 Уникальные пользователи:\n" + "\n".join(
-                [f"👤 [{user['first_name']} {user['last_name'] or ''}](tg://user?id={user['telegram_user_id']})"
-                 for user in result]
-            )
-        else:
-            detail_message = "❌ Нет уникальных пользователей."
 
-    elif call.data == "repeat_visits":
-        result = get_repeat_visits()
-        if result:
-            detail_message = "🔄 Повторные посещения:\n" + "\n".join(
-                [f"👤 [{user['first_name']} {user['last_name'] or ''}](tg://user?id={user['telegram_user_id']})"
-                 for user in result]
-            )
-        else:
-            detail_message = "❌ Нет повторных посещений."
-
-    elif call.data == "inactive_users":
-        result = get_inactive_users()
-        if result:
-            detail_message = "📦 Неактивные пользователи (больше 30 дней):\n" + "\n".join(
-                [f"👤 [{user['first_name']} {user['last_name'] or ''}](tg://user?id={user['telegram_user_id']})"
-                 for user in result]
-            )
-        else:
-            detail_message = "❌ Нет неактивных пользователей."
-
-    # Отправляем подробное сообщение
-    bot.send_message(call.message.chat.id, detail_message, parse_mode="Markdown")
 
 
 # Запуск бота

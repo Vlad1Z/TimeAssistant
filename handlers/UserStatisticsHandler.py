@@ -1,5 +1,6 @@
-
 from telebot import types
+from db import get_unique_users, get_repeat_visits, get_inactive_users
+
 
 class UserStatisticsHandler:
     def __init__(self, bot):
@@ -30,4 +31,46 @@ class UserStatisticsHandler:
             f"👥 Уникальные пользователи: [Нажмите кнопку]\n"
             f"🔄 Повторные посещения: [Нажмите кнопку]\n"
             f"📭 Неактивные пользователи: [Нажмите кнопку]\n"
+        )
+
+    def handle_detailed_statistics(self, call):
+        """Обрабатывает кнопки статистики и выводит детальную информацию."""
+        if call.data == "unique_users":
+            result = get_unique_users()
+            if result:
+                detail_message = "👥 Уникальные пользователи:\n" + "\n".join(
+                    [f"👤 <b>{user['first_name']} {user['last_name'] or ''}</b> "
+                     f"(ID: <code>{user['telegram_user_id']}</code>)"
+                     for user in result]
+                )
+            else:
+                detail_message = "❌ Нет уникальных пользователей."
+
+        elif call.data == "repeat_visits":
+            result = get_repeat_visits()
+            if result:
+                detail_message = "🔄 Повторные посещения:\n" + "\n".join(
+                    [f"👤 <b>{user['first_name']} {user['last_name'] or ''}</b> "
+                     f"(ID: <code>{user['telegram_user_id']}</code>)"
+                     for user in result]
+                )
+            else:
+                detail_message = "❌ Нет повторных посещений."
+
+        elif call.data == "inactive_users":
+            result = get_inactive_users()
+            if result:
+                detail_message = "📭 Неактивные пользователи (больше 30 дней):\n" + "\n".join(
+                    [f"👤 <b>{user['first_name']} {user['last_name'] or ''}</b> "
+                     f"(ID: <code>{user['telegram_user_id']}</code>)"
+                     for user in result]
+                )
+            else:
+                detail_message = "❌ Нет неактивных пользователей."
+
+        # Отправляем сообщение с подробной информацией
+        self.bot.send_message(
+            call.message.chat.id,
+            detail_message,
+            parse_mode="HTML"
         )

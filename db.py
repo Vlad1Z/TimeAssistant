@@ -1,6 +1,7 @@
 import sqlite3
-from datetime import datetime
 import pytz
+from datetime import datetime, timedelta
+
 
 # ===== Настройки базы данных =====
 DB_NAME = "appointments.db"
@@ -49,8 +50,8 @@ def create_tables():
         username TEXT,
         first_name TEXT,
         last_name TEXT,
-        visit_date TEXT,
-        visit_time TEXT
+        visit_date DATETIME,
+        unique_until DATETIME
     );
     """)
 
@@ -154,18 +155,36 @@ def save_user_visit(user_id, username, first_name, last_name):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    visit_date = datetime.now(pytz.timezone(TIMEZONE)).strftime('%Y-%m-%d')
-    visit_time = datetime.now(pytz.timezone(TIMEZONE)).strftime('%H:%M:%S')
+    visit_date = datetime.now(pytz.timezone(TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
+    unique_until = (datetime.now(pytz.timezone(TIMEZONE)) + timedelta(days=3)).strftime('%Y-%m-%d %H:%M:%S')
 
+    # Проверяем, существует ли пользователь в таблице
     cursor.execute("""
-        INSERT INTO user_visits (
-            telegram_user_id, username, first_name, last_name, visit_date, visit_time
-        )
-        VALUES (?, ?, ?, ?, ?, ?);
-    """, (user_id, username, first_name, last_name, visit_date, visit_time))
+        SELECT id FROM user_visits WHERE telegram_user_id = ?;
+    """, (user_id,))
+    result = cursor.fetchone()
+
+    if result:
+        # Если пользователь уже есть, обновляем запись
+        cursor.execute("""
+            UPDATE user_visits
+            SET visit_date = ?, unique_until = ?, username = ?, first_name = ?, last_name = ?
+            WHERE telegram_user_id = ?;
+        """, (visit_date, unique_until, username, first_name, last_name, user_id))
+    else:
+        # Если пользователя нет, добавляем новую запись
+        cursor.execute("""
+            INSERT INTO user_visits (
+                telegram_user_id, username, first_name, last_name, visit_date, unique_until
+            )
+            VALUES (?, ?, ?, ?, ?, ?);
+        """, (user_id, username, first_name, last_name, visit_date, unique_until))
 
     conn.commit()
     conn.close()
+
+
+
 
 def get_user_data_by_record_id(record_id):
     """Возвращает данные пользователя по ID записи."""
@@ -193,21 +212,35 @@ def get_user_data_by_record_id(record_id):
 
 
 def get_unique_users():
-    """Возвращает список уникальных пользователей."""
+    """Возвращает список уникальных пользователей на основании unique_until."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT DISTINCT telegram_user_id, first_name, last_name
-        FROM user_visits
-    """)
+    # Получаем текущую дату и время
+    current_time = datetime.now(pytz.timezone(TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
 
-    result = cursor.fetchall()
+    # Фильтруем пользователей, у которых unique_until >= текущей даты
+    cursor.execute("""
+        SELECT telegram_user_id, username, first_name, last_name, visit_date, unique_until
+        FROM user_visits
+        WHERE unique_until >= ?;
+    """, (current_time,))
+
+    users = cursor.fetchall()
     conn.close()
 
-    # Преобразуем данные в список словарей
-    users = [{"telegram_user_id": row[0], "first_name": row[1], "last_name": row[2]} for row in result]
-    return users
+    # Преобразуем данные в удобный формат
+    return [
+        {
+            "telegram_user_id": user[0],
+            "username": user[1],
+            "first_name": user[2],
+            "last_name": user[3],
+            "visit_date": user[4],
+            "unique_until": user[5],
+        }
+        for user in users
+    ]
 
 
 def get_repeat_visits():
