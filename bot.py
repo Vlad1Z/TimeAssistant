@@ -5,6 +5,8 @@ import config
 from handlers.StartHandler import StartHandler
 from handlers.BookingHandler import BookingHandler
 from handlers.UserRequestHandler import UserRequestHandler
+from handlers.ProceduresHandler import ProceduresHandler
+
 from db import save_user_visit, get_user_data_by_record_id, save_appointment, update_appointment
 
 
@@ -22,6 +24,9 @@ ADMIN_CHAT_ID = int(config.id_chat_owner)
 start_handler = StartHandler(bot)
 booking_handler = BookingHandler(bot, start_handler)
 user_request_handler = UserRequestHandler(bot, ADMIN_CHAT_ID)
+procedures_handler = ProceduresHandler(bot, ADMIN_CHAT_ID)
+
+
 
 # Обработчик команды /start
 @bot.message_handler(commands=['start'])
@@ -233,6 +238,24 @@ def handle_contact_message(message):
 
     # Передаем данные в UserRequestHandler
     user_request_handler.handle_contact(message)
+
+# Обработчик кнопки "Виды процедур"
+@bot.message_handler(func=lambda message: message.text == "💆‍♀️ Виды процедур")
+def handle_procedures(message):
+    """Обрабатывает нажатие на кнопку 'Виды процедур'."""
+    procedures_handler.show_procedures(message)
+
+# Обработчик кнопки "Записаться" в описании процедур
+@bot.callback_query_handler(func=lambda call: call.data == "book_procedure")
+def handle_procedure_booking(call):
+    """Обрабатывает нажатие на 'Записаться' в видах процедур."""
+    procedures_handler.handle_booking_procedure(call)
+
+@bot.callback_query_handler(func=lambda call: call.data == "get_contact")
+def handle_get_contact(call):
+    """Обрабатывает нажатие на 'Узнать подробнее'."""
+    procedures_handler.handle_booking_procedure(call)
+
 
 
 # Запуск бота
