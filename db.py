@@ -192,6 +192,65 @@ def get_user_data_by_record_id(record_id):
     return None
 
 
+def get_unique_users():
+    """Возвращает список уникальных пользователей."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT DISTINCT telegram_user_id, first_name, last_name
+        FROM user_visits
+    """)
+
+    result = cursor.fetchall()
+    conn.close()
+
+    # Преобразуем данные в список словарей
+    users = [{"telegram_user_id": row[0], "first_name": row[1], "last_name": row[2]} for row in result]
+    return users
+
+
+def get_repeat_visits():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT COUNT(*) FROM (
+            SELECT telegram_user_id, COUNT(*) as visit_count
+            FROM user_visits
+            GROUP BY telegram_user_id
+            HAVING visit_count > 1
+        );
+    """)
+    result = cursor.fetchone()[0]
+    conn.close()
+    return result
+
+def get_average_time_between_visits():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT AVG(time_diff) FROM (
+            SELECT telegram_user_id, 
+                   JULIANDAY(MAX(visit_date)) - JULIANDAY(MIN(visit_date)) AS time_diff
+            FROM user_visits
+            GROUP BY telegram_user_id
+        );
+    """)
+    result = cursor.fetchone()[0]
+    conn.close()
+    return f"{result:.2f} дней" if result else "Нет данных"
+
+def get_inactive_users():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT COUNT(*) FROM user_visits
+        WHERE JULIANDAY('now') - JULIANDAY(visit_date) > 30;
+    """)
+    result = cursor.fetchone()[0]
+    conn.close()
+    return result
+
 
 # ===== Инициализация базы данных =====
 if __name__ == "__main__":

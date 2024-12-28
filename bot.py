@@ -6,7 +6,8 @@ from handlers.StartHandler import StartHandler
 from handlers.BookingHandler import BookingHandler
 from handlers.UserRequestHandler import UserRequestHandler
 from handlers.ProceduresHandler import ProceduresHandler
-
+from handlers.UserStatisticsHandler import UserStatisticsHandler
+from db import get_unique_users, get_repeat_visits, get_average_time_between_visits, get_inactive_users
 from db import save_user_visit, get_user_data_by_record_id, save_appointment, update_appointment
 
 
@@ -25,6 +26,8 @@ start_handler = StartHandler(bot)
 booking_handler = BookingHandler(bot, start_handler)
 user_request_handler = UserRequestHandler(bot, ADMIN_CHAT_ID)
 procedures_handler = ProceduresHandler(bot, ADMIN_CHAT_ID)
+user_statistics_handler = UserStatisticsHandler(bot)
+
 
 
 
@@ -256,6 +259,50 @@ def handle_get_contact(call):
     """Обрабатывает нажатие на 'Узнать подробнее'."""
     procedures_handler.handle_booking_procedure(call)
 
+@bot.message_handler(func=lambda message: message.text == "👥 Посмотреть пользователей")
+def handle_view_users(message):
+    """Обрабатывает нажатие на 'Посмотреть пользователей'."""
+    user_statistics_handler.show_statistics(message)
+
+
+@bot.callback_query_handler(
+    func=lambda call: call.data in ["unique_users", "repeat_visits", "inactive_users", "peak_hours"])
+def handle_statistics_detail(call):
+    """Обрабатывает нажатие на кнопки статистики."""
+    bot.answer_callback_query(call.id)  # Убираем индикатор загрузки
+
+    if call.data == "unique_users":
+        result = get_unique_users()
+        if result:
+            detail_message = "👥 Уникальные пользователи:\n" + "\n".join(
+                [f"👤 [{user['first_name']} {user['last_name'] or ''}](tg://user?id={user['telegram_user_id']})"
+                 for user in result]
+            )
+        else:
+            detail_message = "❌ Нет уникальных пользователей."
+
+    elif call.data == "repeat_visits":
+        result = get_repeat_visits()
+        if result:
+            detail_message = "🔄 Повторные посещения:\n" + "\n".join(
+                [f"👤 [{user['first_name']} {user['last_name'] or ''}](tg://user?id={user['telegram_user_id']})"
+                 for user in result]
+            )
+        else:
+            detail_message = "❌ Нет повторных посещений."
+
+    elif call.data == "inactive_users":
+        result = get_inactive_users()
+        if result:
+            detail_message = "📦 Неактивные пользователи (больше 30 дней):\n" + "\n".join(
+                [f"👤 [{user['first_name']} {user['last_name'] or ''}](tg://user?id={user['telegram_user_id']})"
+                 for user in result]
+            )
+        else:
+            detail_message = "❌ Нет неактивных пользователей."
+
+    # Отправляем подробное сообщение
+    bot.send_message(call.message.chat.id, detail_message, parse_mode="Markdown")
 
 
 # Запуск бота
