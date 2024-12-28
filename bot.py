@@ -7,8 +7,7 @@ from handlers.BookingHandler import BookingHandler
 from handlers.UserRequestHandler import UserRequestHandler
 from handlers.ProceduresHandler import ProceduresHandler
 from handlers.UserStatisticsHandler import UserStatisticsHandler
-from db import get_unique_users, get_repeat_visits, get_average_time_between_visits, get_inactive_users
-from db import save_user_visit, get_user_data_by_record_id, save_appointment, update_appointment
+from db import save_user_visit, get_user_data_by_record_id, save_appointment, update_appointment, log_user_action
 
 
 # Настроим логирование
@@ -47,6 +46,9 @@ def handle_start(message):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("record_"))
 def handle_admin_booking(call):
+    log_user_action(user_id=call.message.chat.id, username=call.from_user.username, action_type="inline_button",
+                    action_details=f"Нажата кнопка: {call.data}")
+    # Ваш код обработки инлайн-кнопки
     """Обрабатывает нажатие на кнопку 'Записать'."""
     try:
         record_id = int(call.data.split("_")[-1])  # Получаем ID записи из callback_data
@@ -230,6 +232,8 @@ def handle_confirmation(message):
 @bot.message_handler(func=lambda message: message.text == "📅 Узнать о свободных слотах")
 def handle_user_request(message):
     """Обрабатывает запрос от пользователя."""
+    log_user_action(user_id=message.chat.id, username=message.from_user.username, action_type="menu_click",
+                    action_details="Узнать о свободных слотах")
     user_request_handler.start_request(message)
 
 # Обработчик для получения контакта
@@ -246,6 +250,8 @@ def handle_contact_message(message):
 @bot.message_handler(func=lambda message: message.text == "💆‍♀️ Виды процедур")
 def handle_procedures(message):
     """Обрабатывает нажатие на кнопку 'Виды процедур'."""
+    log_user_action(user_id=message.chat.id, username=message.from_user.username, action_type="menu_click",
+                    action_details="Виды процедур")
     procedures_handler.show_procedures(message)
 
 # Обработчик кнопки "Записаться" в описании процедур
@@ -271,6 +277,9 @@ def handle_statistics_detail(call):
     bot.answer_callback_query(call.id)  # Убираем индикатор загрузки
     user_statistics_handler.handle_detailed_statistics(call)
 
+@bot.callback_query_handler(func=lambda call: True)
+def handle_callback(call):
+    log_user_action(user_id=call.message.chat.id, username=call.from_user.username, action_type="button_click", action_details=call.data)
 
 
 

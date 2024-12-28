@@ -33,13 +33,9 @@ def create_tables():
         appointment_time TIME,
         request_date DATETIME,
         comments TEXT,
-        status TEXT
+        status TEXT,
+        message_id INTEGER
     );
-    """)
-
-    # Добавление столбца message_id, если его нет
-    cursor.execute("""
-    ALTER TABLE records ADD COLUMN message_id INTEGER;
     """)
 
     # Таблица посещений пользователей
@@ -51,12 +47,19 @@ def create_tables():
         first_name TEXT,
         last_name TEXT,
         visit_date DATETIME,
-        unique_until DATETIME
+        unique_until DATETIME,
+        last_action TEXT
     );
+    """)
+
+    # Добавление уникального индекса для telegram_user_id
+    cursor.execute("""
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_telegram_user_id ON user_visits(telegram_user_id);
     """)
 
     conn.commit()
     conn.close()
+
 
 # ===== Операции с таблицей records =====
 def save_appointment(user_id, username, first_name, last_name, phone_number, date, time, comments, status):
@@ -283,6 +286,28 @@ def get_inactive_users():
     result = cursor.fetchone()[0]
     conn.close()
     return result
+
+def log_user_action(user_id, username, action_type, action_details=None):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    # Текущее время для логирования
+    action_time = datetime.now(pytz.timezone(TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
+
+    # Логируем действие пользователя
+    cursor.execute("""
+        INSERT INTO user_visits (
+            telegram_user_id, username, visit_date, unique_until, last_action
+        )
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(telegram_user_id) DO UPDATE SET
+            visit_date = excluded.visit_date,
+            unique_until = excluded.unique_until,
+            last_action = excluded.last_action;
+    """, (user_id, username, action_time, action_time, action_type))
+
+    conn.commit()
+    conn.close()
 
 
 # ===== Инициализация базы данных =====

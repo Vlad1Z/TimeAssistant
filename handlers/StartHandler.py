@@ -1,5 +1,7 @@
 from telebot import types
 from config import id_chat_owner
+from db import log_user_action
+
 
 class StartHandler:
     def __init__(self, bot):
@@ -26,5 +28,14 @@ class StartHandler:
                 "Выберите одну из опций ниже, чтобы продолжить:👇"
             )
 
+        # Логирование действия пользователя
+        log_user_action(
+            user_id=message.chat.id,
+            username=message.from_user.username,
+            action_type="start",
+            action_details="main_menu"
+        )
+
         # Отправка сообщения с кнопками
         self.bot.send_message(message.chat.id, welcome_text, reply_markup=markup)
+
