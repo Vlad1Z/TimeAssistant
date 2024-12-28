@@ -7,7 +7,8 @@ from handlers.BookingHandler import BookingHandler
 from handlers.UserRequestHandler import UserRequestHandler
 from handlers.ProceduresHandler import ProceduresHandler
 from handlers.UserStatisticsHandler import UserStatisticsHandler
-from db import save_user_visit, get_user_data_by_record_id, save_appointment, update_appointment, log_user_action
+from handlers.RecordsHandler import RecordsHandler
+from db import save_user_visit, get_user_data_by_record_id, update_appointment, log_user_action, get_records_from_today
 
 
 # Настроим логирование
@@ -26,7 +27,7 @@ booking_handler = BookingHandler(bot, start_handler)
 user_request_handler = UserRequestHandler(bot, ADMIN_CHAT_ID)
 procedures_handler = ProceduresHandler(bot, ADMIN_CHAT_ID)
 user_statistics_handler = UserStatisticsHandler(bot)
-
+records_handler = RecordsHandler(bot)
 
 
 
@@ -268,6 +269,7 @@ def handle_get_contact(call):
 @bot.message_handler(func=lambda message: message.text == "👥 Посмотреть пользователей")
 def handle_view_users(message):
     """Обрабатывает нажатие на 'Посмотреть пользователей'."""
+    bot.delete_message(message.chat.id, message.message_id)
     user_statistics_handler.show_statistics(message)
 
 
@@ -287,6 +289,12 @@ def handle_callback(call):
 def handle_back_to_stats(call):
     """Возвращает в главное меню статистики."""
     user_statistics_handler.show_statistics(call.message)
+
+@bot.message_handler(func=lambda message: message.text == "📋 Отобразить записи")
+def handle_show_records(message):
+    """Обрабатывает нажатие на 'Отобразить записи'."""
+    bot.delete_message(message.chat.id, message.message_id)  # Удаляем сообщение пользователя
+    records_handler.show_records(message)
 
 
 # Запуск бота

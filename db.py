@@ -321,6 +321,49 @@ def log_user_action(user_id, username, action_type, action_details=None):
     conn.close()
 
 
+# Вспомогательная функция для получения записей из базы данных
+# Реализуем ее в файле db.py
+def get_records_from_today():
+    """Получает записи с текущей даты и времени."""
+    import sqlite3
+    from datetime import datetime
+
+    conn = sqlite3.connect('appointments.db')
+    cursor = conn.cursor()
+
+    # Получаем текущую дату и время
+    current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    # Выполняем запрос к базе данных
+    cursor.execute("""
+        SELECT id, telegram_user_id, username, first_name, last_name, phone_number,
+               appointment_date, appointment_time, comments, status
+        FROM records
+        WHERE datetime(appointment_date || ' ' || appointment_time) >= datetime(?)
+        ORDER BY appointment_date, appointment_time ASC;
+    """, (current_datetime,))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    # Преобразуем результаты в удобный формат
+    return [
+        {
+            "id": row[0],
+            "telegram_user_id": row[1],
+            "username": row[2],
+            "first_name": row[3],
+            "last_name": row[4],
+            "phone_number": row[5],
+            "appointment_date": row[6],
+            "appointment_time": row[7],
+            "comments": row[8],
+            "status": row[9]
+        }
+        for row in rows
+    ]
+
+
 
 # ===== Инициализация базы данных =====
 if __name__ == "__main__":
