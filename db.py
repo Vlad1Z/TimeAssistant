@@ -114,11 +114,12 @@ def update_appointment(user_id, appointment_date, appointment_time, status, comm
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    # Проверяем и форматируем время в ЧЧ:ММ
-    try:
-        appointment_time = datetime.strptime(appointment_time, '%H:%M').strftime('%H:%M')
-    except ValueError:
-        raise ValueError("Некорректный формат времени. Время должно быть в формате ЧЧ:ММ.")
+    # Проверяем и форматируем время только если оно не None
+    if appointment_time:
+        try:
+            appointment_time = datetime.strptime(appointment_time, '%H:%M').strftime('%H:%M')
+        except ValueError:
+            raise ValueError("Некорректный формат времени. Время должно быть в формате ЧЧ:ММ.")
 
     cursor.execute("""
         UPDATE records
@@ -128,6 +129,7 @@ def update_appointment(user_id, appointment_date, appointment_time, status, comm
 
     conn.commit()
     conn.close()
+
 
 def get_last_appointment_id(user_id):
     """Возвращает последний ID записи для пользователя."""

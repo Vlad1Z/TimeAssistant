@@ -50,10 +50,17 @@ class UserRequestHandler:
                 "💡 Нажмите на одну из кнопок ниже, чтобы записать клиента или написать ему сообщение."
             )
 
-            markup = types.InlineKeyboardMarkup()
+            markup = types.InlineKeyboardMarkup(row_width=2)  # Указываем, что в строке максимум 2 кнопки
+
+            # Добавляем кнопку "Написать сообщение" в отдельной строке
             markup.add(
-                types.InlineKeyboardButton("📝 Записать", callback_data=f"record_{record_id}"),
                 types.InlineKeyboardButton("✉️ Написать сообщение", url=f"tg://user?id={user_id}")
+            )
+
+            # Добавляем кнопки "Записать" и "Отклонить" в одной строке
+            markup.row(
+                types.InlineKeyboardButton("📝 Записать", callback_data=f"record_{record_id}"),
+                types.InlineKeyboardButton("❌ Отклонить", callback_data=f"cancel_{record_id}")
             )
 
             # Отправляем сообщение администратору с корректным parse_mode
