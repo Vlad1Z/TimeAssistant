@@ -1,7 +1,6 @@
 import sqlite3
 import pytz
 from datetime import datetime, timedelta
-from datetime import datetime
 
 
 # ===== Настройки базы данных =====
@@ -61,7 +60,6 @@ def create_tables():
     conn.commit()
     conn.close()
 
-
 # ===== Операции с таблицей records =====
 def save_appointment(user_id, username, first_name, last_name, phone_number, date, time, comments, status):
     """Сохраняет запись в базе данных. Обновляет запись, если она уже существует."""
@@ -96,7 +94,6 @@ def save_appointment(user_id, username, first_name, last_name, phone_number, dat
     conn.commit()
     conn.close()
 
-
 def save_message_id_to_db(record_id, message_id):
     """Сохраняет message_id для конкретной записи."""
     conn = sqlite3.connect(DB_NAME)
@@ -125,7 +122,6 @@ def update_appointment(user_id, appointment_date, appointment_time, status, comm
 
     conn.commit()
     conn.close()
-
 
 def get_last_appointment_id(user_id):
     """Возвращает последний ID записи для пользователя."""
@@ -187,9 +183,6 @@ def save_user_visit(user_id, username, first_name, last_name):
     conn.commit()
     conn.close()
 
-
-
-
 def get_user_data_by_record_id(record_id):
     """Возвращает данные пользователя по ID записи."""
     conn = sqlite3.connect(DB_NAME)
@@ -213,7 +206,6 @@ def get_user_data_by_record_id(record_id):
             "message_id": result[5]  # Добавляем message_id в результат
         }
     return None
-
 
 def get_unique_users():
     """Возвращает список уникальных пользователей на основании unique_until."""
@@ -356,8 +348,6 @@ def get_records_from_today():
         }
         for row in rows
     ]
-
-
 
 # ===== Инициализация базы данных =====
 if __name__ == "__main__":
