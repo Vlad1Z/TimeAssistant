@@ -267,7 +267,7 @@ def handle_contact_message(message):
     user_request_handler.handle_contact(message)
 
 # Обработчик кнопки "Виды процедур"
-@bot.message_handler(func=lambda message: message.text == "💆‍♀️ Виды процедур")
+@bot.message_handler(func=lambda message: message.text == "✨ Виды процедур")
 def handle_procedures(message):
     """Обрабатывает нажатие на кнопку 'Виды процедур'."""
     log_user_action(user_id=message.chat.id, username=message.from_user.username, action_type="menu_click",
