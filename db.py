@@ -1,6 +1,7 @@
 import sqlite3
 import pytz
 from datetime import datetime, timedelta
+from datetime import datetime
 
 
 # ===== Настройки базы данных =====
@@ -245,7 +246,6 @@ def get_unique_users():
         for user in users
     ]
 
-
 def get_repeat_visits():
     """Возвращает количество пользователей с повторными посещениями."""
     conn = sqlite3.connect(DB_NAME)
@@ -262,10 +262,6 @@ def get_repeat_visits():
     result = cursor.fetchone()[0]
     conn.close()
     return result
-
-
-
-
 
 def get_inactive_users():
     """Возвращает список неактивных пользователей (не заходивших более 30 дней)."""
@@ -325,8 +321,6 @@ def log_user_action(user_id, username, action_type, action_details=None):
 # Реализуем ее в файле db.py
 def get_records_from_today():
     """Получает записи с текущей даты и времени."""
-    import sqlite3
-    from datetime import datetime
 
     conn = sqlite3.connect('appointments.db')
     cursor = conn.cursor()

@@ -272,8 +272,6 @@ def handle_view_users(message):
     bot.delete_message(message.chat.id, message.message_id)
     user_statistics_handler.show_statistics(message)
 
-
-
 @bot.callback_query_handler(func=lambda call: call.data in ["unique_users", "repeat_visits", "inactive_users"])
 def handle_statistics_detail(call):
     """Обрабатывает нажатие на ссылки статистики."""
