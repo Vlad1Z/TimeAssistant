@@ -114,6 +114,12 @@ def update_appointment(user_id, appointment_date, appointment_time, status, comm
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
+    # Проверяем и форматируем время в ЧЧ:ММ
+    try:
+        appointment_time = datetime.strptime(appointment_time, '%H:%M').strftime('%H:%M')
+    except ValueError:
+        raise ValueError("Некорректный формат времени. Время должно быть в формате ЧЧ:ММ.")
+
     cursor.execute("""
         UPDATE records
         SET appointment_date = ?, appointment_time = ?, status = ?, comments = ?

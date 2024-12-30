@@ -64,7 +64,6 @@ def handle_exit(message):
         reply_markup=markup  # Устанавливаем новую клавиатуру
     )
 
-
 @bot.message_handler(func=lambda message: message.text == "🚀 Запустить")
 def handle_restart(message):
     start_handler.main_menu(message)
@@ -167,15 +166,11 @@ def handle_booking_confirmation(call):
             f"🎉 Вы успешно записаны!\n\n"
             f"📅 Дата: {booking_handler.selected_date.strftime('%d.%m.%y')}\n"
             f"⏰ Время: {booking_handler.selected_time}\n"
-            f"📍 Адрес: [Укажите адрес]\n"
-            f"📞 Контакт: [Укажите телефон]\n"
-            f"💬 Комментарий: {booking_handler.comments}\n\n"
+            f"📍 Адрес: Гомель, ул. Чкалова 55\n"
+            f"📞 Контакт: +37529111111\n\n"
             "Спасибо за запись! 😊",
             parse_mode="HTML"
         )
-
-
-
 
 
     elif call.data == "cancel_booking":

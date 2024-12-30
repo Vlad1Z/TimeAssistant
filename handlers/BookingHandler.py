@@ -63,7 +63,8 @@ class BookingHandler:
         """Обрабатывает ввод времени администратором."""
         try:
             self.selected_time = message.text
-            datetime.strptime(self.selected_time, '%H:%M')  # Проверка формата времени
+            # Преобразуем введённое время в формат ЧЧ:ММ
+            self.selected_time = datetime.strptime(self.selected_time, '%H:%M').strftime('%H:%M')
 
             # Удаляем предыдущее сообщение (вопрос и ответ)
             self.bot.delete_message(message.chat.id, message.message_id)
