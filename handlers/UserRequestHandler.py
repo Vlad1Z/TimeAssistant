@@ -76,9 +76,9 @@ class UserRequestHandler:
                 parse_mode="HTML"
             )
 
-            # Отправляем главное меню
+            # Вызов метода для отображения главного меню
             start_handler = StartHandler(self.bot)
-            start_handler.main_menu(message)
+            start_handler.show_main_menu_buttons(message.chat.id)
 
 
 

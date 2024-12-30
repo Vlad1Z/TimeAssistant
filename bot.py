@@ -8,6 +8,7 @@ from handlers.UserRequestHandler import UserRequestHandler
 from handlers.ProceduresHandler import ProceduresHandler
 from handlers.UserStatisticsHandler import UserStatisticsHandler
 from handlers.RecordsHandler import RecordsHandler
+from handlers.SocialMediaHandler import SocialMediaHandler
 from db import save_user_visit, get_user_data_by_record_id, update_appointment, log_user_action, get_records_from_today
 
 
@@ -28,6 +29,8 @@ user_request_handler = UserRequestHandler(bot, ADMIN_CHAT_ID)
 procedures_handler = ProceduresHandler(bot, ADMIN_CHAT_ID)
 user_statistics_handler = UserStatisticsHandler(bot)
 records_handler = RecordsHandler(bot)
+social_media_handler = SocialMediaHandler(bot)
+
 
 
 
@@ -43,6 +46,27 @@ def handle_start(message):
     # Логируем информацию о пользователе
     save_user_visit(user_id, username, first_name, last_name)
 
+    start_handler.main_menu(message)
+
+@bot.message_handler(func=lambda message: message.text == "🙏 Спасибо, вернуться позже")
+def handle_exit(message):
+    """Обрабатывает нажатие на кнопку 'Спасибо, вернуться позже'."""
+    # Создаем клавиатуру с одной кнопкой "Запустить"
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    button = types.KeyboardButton("🚀 Запустить")
+    markup.add(button)
+
+    # Отправляем сообщение пользователю
+    bot.send_message(
+        message.chat.id,
+        "💖 Спасибо, что воспользовались нашим ботом! Мы всегда рады вам помочь. Хорошего дня! 😊\n\n"
+        "🚀 Когда будете готовы вернуться, нажмите 'Запустить'.",
+        reply_markup=markup  # Устанавливаем новую клавиатуру
+    )
+
+
+@bot.message_handler(func=lambda message: message.text == "🚀 Запустить")
+def handle_restart(message):
     start_handler.main_menu(message)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("record_"))
@@ -293,6 +317,17 @@ def handle_show_records(message):
     """Обрабатывает нажатие на 'Отобразить записи'."""
     bot.delete_message(message.chat.id, message.message_id)  # Удаляем сообщение пользователя
     records_handler.show_records(message)
+
+@bot.message_handler(func=lambda message: message.text == "🌐 Другие соц сети")
+def handle_social_media(message):
+    """Обрабатывает нажатие на кнопку 'Другие соц сети'."""
+    log_user_action(
+        user_id=message.chat.id,
+        username=message.from_user.username,
+        action_type="menu_click",
+        action_details="Социальные сети"
+    )
+    social_media_handler.show_social_media(message)
 
 
 # Запуск бота

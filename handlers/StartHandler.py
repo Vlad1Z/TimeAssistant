@@ -39,3 +39,21 @@ class StartHandler:
         # Отправка сообщения с кнопками
         self.bot.send_message(message.chat.id, welcome_text, reply_markup=markup)
 
+    def show_main_menu_buttons(self, chat_id):
+        """Отображает главное меню кнопок без сообщения."""
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+
+        if str(chat_id) == id_chat_owner:
+            markup.add("📝 Записать", "📋 Отобразить записи", "👥 Посмотреть пользователей")
+        else:
+            markup.add("💆‍♀️ Виды процедур", "📅 Узнать о свободных слотах", "🌐 Другие соц сети")
+            markup.add("🙏 Спасибо, вернуться позже")  # Добавляем новую кнопку
+
+        self.bot.send_message(chat_id, "👇 Главное меню:", reply_markup=markup)
+
+    def show_start_button(self, chat_id):
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        markup.add("🚀 Запустить")
+        self.bot.send_message(chat_id, "Добро пожаловать! Нажмите 'Запустить', чтобы начать. 🚀", reply_markup=markup)
+
+
