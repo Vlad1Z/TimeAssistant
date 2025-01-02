@@ -109,7 +109,17 @@ def handle_booking_confirmation(call):
         print(f"Пользователь с record_id {record_id} не найден.")
         return
 
-    # Формируем текст для обновления сообщения
+    # Проверяем наличие message_id заявки
+    message_id_request = user_data.get("message_id")
+    if message_id_request:
+        try:
+            # Удаляем сообщение с заявкой
+            bot.delete_message(chat_id=call.message.chat.id, message_id=message_id_request)
+            print(f"Сообщение с message_id {message_id_request} успешно удалено.")
+        except Exception as e:
+            print(f"Не удалось удалить сообщение с заявкой: {e}")
+
+    # Формируем текст для редактирования сообщения подтверждения/отклонения
     if action == "confirm":
         # Обновляем запись в базе данных
         update_appointment(
@@ -128,17 +138,6 @@ def handle_booking_confirmation(call):
             f"📅 Дата: {booking_handler.selected_date.strftime('%d.%m.%y')}\n"
             f"⏰ Время: {booking_handler.selected_time}\n"
             f"💬 Комментарий: {booking_handler.comments}"
-        )
-        # Уведомляем клиента
-        bot.send_message(
-            user_data["telegram_user_id"],
-            f"🎉 Вы успешно записаны!\n\n"
-            f"📅 Дата: {booking_handler.selected_date.strftime('%d.%m.%y')}\n"
-            f"⏰ Время: {booking_handler.selected_time}\n"
-            f"📍 Адрес: Гомель, ул. Чкалова 55\n"
-            f"📞 Контакт: +37529111111\n\n"
-            "Спасибо за запись! 😊",
-            parse_mode="HTML"
         )
     elif action == "cancel":
         # Обновляем запись в базе данных
@@ -168,6 +167,8 @@ def handle_booking_confirmation(call):
         print(f"Сообщение о заявке №{record_id} успешно обновлено.")
     except Exception as e:
         print(f"Ошибка при редактировании сообщения: {e}")
+
+
 
 
 
