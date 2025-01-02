@@ -1,4 +1,5 @@
 from handlers.StartHandler import StartHandler
+from datetime import datetime
 from telebot import types
 from db import save_appointment, get_last_appointment_id, save_message_id_to_db
 
@@ -29,8 +30,18 @@ class UserRequestHandler:
             user_id = message.contact.user_id or "Не указан"
 
             # Сохраняем данные в базу и получаем ID записи
-            save_appointment(user_id, user_username, user_name, message.contact.last_name, phone_number, None, None,
-                             None, "ожидает")
+            save_appointment(
+                user_id=user_id,
+                username=user_username,
+                first_name=user_name,
+                last_name=message.contact.last_name,
+                phone_number=phone_number,
+                date=None,
+                time=None,
+                request_date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),  # Форматируем дату и время
+                comments=None,
+                status="ожидает"
+            )
             record_id = get_last_appointment_id(user_id)
 
             if not record_id:

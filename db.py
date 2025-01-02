@@ -61,7 +61,7 @@ def create_tables():
     conn.close()
 
 # ===== Операции с таблицей records =====
-def save_appointment(user_id, username, first_name, last_name, phone_number, date, time, comments, status):
+def save_appointment(user_id, username, first_name, last_name, phone_number, date, time, request_date, comments, status):
     """Сохраняет запись в базе данных. Обновляет запись, если она уже существует."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -78,21 +78,22 @@ def save_appointment(user_id, username, first_name, last_name, phone_number, dat
         cursor.execute("""
             UPDATE records
             SET username = ?, first_name = ?, last_name = ?, phone_number = ?, 
-                appointment_time = ?, comments = ?, status = ?
+                appointment_time = ?, comments = ?, status = ?, request_date = ?
             WHERE id = ?;
-        """, (username, first_name, last_name, phone_number, time, comments, status, existing_record[0]))
+        """, (username, first_name, last_name, phone_number, time, comments, status, request_date, existing_record[0]))
     else:
         # Если записи нет, создаём новую
         cursor.execute("""
             INSERT INTO records (
                 telegram_user_id, username, first_name, last_name, phone_number, 
-                appointment_date, appointment_time, comments, status
+                appointment_date, appointment_time, request_date, comments, status
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """, (user_id, username, first_name, last_name, phone_number, date, time, comments, status))
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """, (user_id, username, first_name, last_name, phone_number, date, time, request_date, comments, status))
 
     conn.commit()
     conn.close()
+
 
 def save_message_id_to_db(record_id, message_id):
     """Сохраняет message_id для конкретной записи."""
