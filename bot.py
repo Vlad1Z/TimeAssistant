@@ -131,14 +131,15 @@ def handle_booking_confirmation(call):
         )
         updated_message = (
             "✅ Запись успешно подтверждена!\n\n"
-            f"👤 Имя: {user_data['first_name']} {user_data['last_name']}\n"
-            f"📱 Телефон: {user_data['phone_number']}\n"
-            f"📧 Username: @{user_data['username']}\n"
-            f"🆔 ID клиента: <code>{user_data['telegram_user_id']}</code>\n\n"
+            f"👤 Имя: {user_data.get('first_name', '')} {user_data.get('last_name', '')}\n"
+            f"📱 Телефон: {user_data.get('phone_number', 'Не указан')}\n"
+            f"📧 Username: @{user_data.get('username', 'Не указан')}\n"
+            f"🆔 ID клиента: <code>{user_data.get('telegram_user_id', 'Не указан')}</code>\n\n"
             f"📅 Дата: {booking_handler.selected_date.strftime('%d.%m.%y')}\n"
             f"⏰ Время: {booking_handler.selected_time}\n"
-            f"💬 Комментарий: {booking_handler.comments}"
+            f"💬 Комментарий: {booking_handler.comments if booking_handler.comments else 'Нет комментариев'}"
         )
+
     elif action == "cancel":
         # Обновляем запись в базе данных
         update_appointment(

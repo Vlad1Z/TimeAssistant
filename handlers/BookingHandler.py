@@ -114,7 +114,7 @@ class BookingHandler:
 
         # Отправляем сообщение с подтверждением
         confirmation_message = (
-            f"📩 Запрос на запись (Заявка №{self.current_record_id}):\n"
+            f"📩 Запрос на запись (Заявка №{self.current_record_id}):\n\n"
             f"👤 Имя: {user_data['first_name'] or 'Не указано'} {user_data['last_name'] or ''}\n"
             f"📱 Телефон: {user_data['phone_number'] or 'Не указан'}\n"
             f"📧 Username: @{user_data['username'] or 'Не указан'}\n"

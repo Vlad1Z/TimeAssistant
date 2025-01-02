@@ -24,6 +24,9 @@ class UserRequestHandler:
     def handle_contact(self, message):
         """Обрабатывает контакт, отправленный пользователем."""
         if message.contact:
+            # Удаляем сообщение с номером телефона у пользователя
+            self.bot.delete_message(message.chat.id, message.message_id)
+
             phone_number = message.contact.phone_number
             user_name = message.contact.first_name or "Пользователь"
             user_username = message.from_user.username or "❌ Не указан"
@@ -53,7 +56,7 @@ class UserRequestHandler:
 
             # Уведомление администратора
             admin_message = (
-                f"📩 Запрос на запись (Заявка №{record_id}):\n"
+                f"📩 Запрос на запись (Заявка №{record_id}):\n\n"
                 f"👤 Имя: {message.from_user.first_name or 'Не указано'} {message.from_user.last_name or ''}\n"
                 f"📱 Телефон: {phone_number}\n"
                 f"📧 Username: @{user_username}\n"
