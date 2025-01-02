@@ -91,47 +91,34 @@ def handle_admin_booking(call):
 
 @bot.callback_query_handler(func=lambda call: call.data in ["confirm_booking", "cancel_booking"])
 def handle_booking_confirmation(call):
-    """Обрабатывает нажатие инлайн-кнопок."""
+    """Обрабатывает нажатие инлайн-кнопок подтверждения или отклонения заявки."""
     bot.answer_callback_query(call.id)  # Убираем индикатор загрузки
 
-    if call.data == "confirm_booking":
-        # Проверяем record_id
-        print(f"Текущий record_id: {booking_handler.current_record_id}")
+    # Проверяем, к какому действию относится нажатая кнопка
+    action = "confirm" if call.data == "confirm_booking" else "cancel"
+    record_id = booking_handler.current_record_id
 
-        # Получаем данные пользователя из базы
-        user_data = get_user_data_by_record_id(booking_handler.current_record_id)
+    # Получаем данные пользователя из базы
+    user_data = get_user_data_by_record_id(record_id)
 
-        if not user_data:
-            bot.send_message(
-                call.message.chat.id,
-                "❌ Ошибка: данные пользователя не найдены."
-            )
-            print(f"Пользователь с record_id {booking_handler.current_record_id} не найден.")
-            return
+    if not user_data:
+        bot.send_message(
+            call.message.chat.id,
+            "❌ Ошибка: данные пользователя не найдены."
+        )
+        print(f"Пользователь с record_id {record_id} не найден.")
+        return
 
-        # Проверяем наличие message_id
-        message_id_request = user_data.get("message_id")
-        print(f"Полученный message_id: {message_id_request}")
-
-        if message_id_request:
-            try:
-                bot.delete_message(call.message.chat.id, message_id_request)
-                print(f"Сообщение с message_id {message_id_request} успешно удалено.")
-            except Exception as e:
-                print(f"Не удалось удалить сообщение с заявкой: {e}")
-        else:
-            print("Ошибка: message_id отсутствует в базе.")
-
+    # Формируем текст для обновления сообщения
+    if action == "confirm":
         # Обновляем запись в базе данных
         update_appointment(
-            user_id=booking_handler.current_record_id,  # ID записи
+            user_id=record_id,
             appointment_date=booking_handler.selected_date.strftime('%Y-%m-%d'),
             appointment_time=booking_handler.selected_time,
             status="Записан",
             comment=booking_handler.comments
         )
-
-        # Формируем сообщение с полной информацией о клиенте
         updated_message = (
             "✅ Запись успешно подтверждена!\n\n"
             f"👤 Имя: {user_data['first_name']} {user_data['last_name']}\n"
@@ -142,25 +129,7 @@ def handle_booking_confirmation(call):
             f"⏰ Время: {booking_handler.selected_time}\n"
             f"💬 Комментарий: {booking_handler.comments}"
         )
-
-        # Создаём кнопку "Написать"
-        markup = types.InlineKeyboardMarkup()
-        markup.add(
-            types.InlineKeyboardButton(
-                "Написать", url=f"tg://user?id={user_data['telegram_user_id']}"
-            )
-        )
-
-        # Редактируем текущее сообщение с кнопками
-        bot.edit_message_text(
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id,
-            text=updated_message,
-            reply_markup=markup,
-            parse_mode="HTML"
-        )
-
-        # Уведомляем клиента о записи
+        # Уведомляем клиента
         bot.send_message(
             user_data["telegram_user_id"],
             f"🎉 Вы успешно записаны!\n\n"
@@ -171,13 +140,38 @@ def handle_booking_confirmation(call):
             "Спасибо за запись! 😊",
             parse_mode="HTML"
         )
+    elif action == "cancel":
+        # Обновляем запись в базе данных
+        update_appointment(
+            user_id=record_id,
+            appointment_date=None,
+            appointment_time=None,
+            status="Отклонена",
+            comment=None
+        )
+        updated_message = (
+            f"❌ Заявка №{record_id} отклонена!\n\n"
+            f"👤 Имя: {user_data['first_name']} {user_data['last_name']}\n"
+            f"📱 Телефон: {user_data['phone_number']}\n"
+            f"📧 Username: @{user_data['username']}\n"
+            f"🆔 ID клиента: <code>{user_data['telegram_user_id']}</code>"
+        )
 
-    elif call.data == "cancel_booking":
+    # Редактируем текущее сообщение
+    try:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=updated_message,
+            parse_mode="HTML"
+        )
+        print(f"Сообщение о заявке №{record_id} успешно обновлено.")
+    except Exception as e:
+        print(f"Ошибка при редактировании сообщения: {e}")
 
-        process_cancel_booking(record_id=booking_handler.current_record_id, call=call)
 
 
-def process_cancel_booking(record_id, chat_id=None, call=None):
+def process_cancel_booking(record_id, call=None):
     """
     Обрабатывает отклонение заявки.
     """
@@ -187,35 +181,19 @@ def process_cancel_booking(record_id, chat_id=None, call=None):
     if not user_data:
         if call:
             bot.send_message(call.message.chat.id, "❌ Ошибка: данные пользователя не найдены.")
-        elif chat_id:
-            bot.send_message(chat_id, "❌ Ошибка: данные пользователя не найдены.")
-        print(f"Пользователь с record_id {record_id} не найден.")
         return
-
-    # Проверяем наличие message_id
-    message_id_request = user_data.get("message_id")
-    print(f"Полученный message_id: {message_id_request}")
-
-    if message_id_request:
-        try:
-            bot.delete_message(call.message.chat.id if call else chat_id, message_id_request)
-            print(f"Сообщение с message_id {message_id_request} успешно удалено.")
-        except Exception as e:
-            print(f"Не удалось удалить сообщение с заявкой: {e}")
-    else:
-        print("Ошибка: message_id отсутствует в базе.")
 
     # Обновляем запись в базе данных
     update_appointment(
-        user_id=record_id,  # Передаём только record_id
+        user_id=record_id,
         appointment_date=None,
         appointment_time=None,
         status="Отклонена",
         comment=None
     )
 
-    # Формируем сообщение с информацией об отклонении
-    decline_message = (
+    # Формируем текст для обновления
+    updated_message = (
         f"❌ Запись отклонена! (Заявка №{record_id})\n\n"
         f"👤 Имя: {user_data['first_name']} {user_data['last_name']}\n"
         f"📱 Телефон: {user_data['phone_number']}\n"
@@ -223,13 +201,17 @@ def process_cancel_booking(record_id, chat_id=None, call=None):
         f"🆔 ID клиента: <code>{user_data['telegram_user_id']}</code>\n"
     )
 
-    # Отправляем сообщение админу
-    bot.send_message(
-        chat_id=call.message.chat.id if call else chat_id,
-        text=decline_message,
-        parse_mode="HTML"
-    )
-    print(f"Статус записи {record_id} обновлён на 'Отклонена'.")
+    # Редактируем текущее сообщение
+    try:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=updated_message,
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        print(f"Ошибка при редактировании сообщения: {e}")
+
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("cancel_"))
