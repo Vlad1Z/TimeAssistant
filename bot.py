@@ -173,11 +173,8 @@ def handle_booking_confirmation(call):
         )
 
     elif call.data == "cancel_booking":
-        # Используем универсальный метод для обработки отклонения
-        process_cancel_booking(
-            record_id=booking_handler.current_record_id,
-            call=call
-        )
+
+        process_cancel_booking(record_id=booking_handler.current_record_id, call=call)
 
 
 def process_cancel_booking(record_id, chat_id=None, call=None):

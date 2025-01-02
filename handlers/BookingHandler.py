@@ -134,11 +134,12 @@ class BookingHandler:
         )
 
         # Отправляем сообщение с кнопками
-        self.bot.send_message(
+        sent_message = self.bot.send_message(
             message.chat.id,
             confirmation_message,
             reply_markup=markup,
             parse_mode="HTML"  # Указываем HTML для обработки тега <code>
         )
 
+        self.last_bot_message_id = sent_message.message_id  # Сохраняем ID сообщения
 
