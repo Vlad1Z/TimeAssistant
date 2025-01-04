@@ -6,7 +6,13 @@ from handlers.StartHandler import StartHandler
 from handlers.BookingHandler import BookingHandler
 from handlers.UserRequestHandler import UserRequestHandler
 from handlers.ProceduresHandler import ProceduresHandler
-from handlers.UserStatisticsHandler import UserStatisticsHandler
+from handlers.UserStatisticsHandler import (
+    UniqueUsersStatisticsHandler,
+    RepeatVisitsStatisticsHandler,
+    InactiveUsersStatisticsHandler,
+    VisitedSectionsStatisticsHandler,
+    BaseStatisticsHandler
+)
 from handlers.RecordsHandler import RecordsHandler
 from handlers.SocialMediaHandler import SocialMediaHandler
 from db import save_user_visit, get_user_data_by_record_id, update_appointment, get_records_from_today
@@ -28,10 +34,14 @@ start_handler = StartHandler(bot)
 booking_handler = BookingHandler(bot, start_handler)
 user_request_handler = UserRequestHandler(bot, ADMIN_CHAT_ID)
 procedures_handler = ProceduresHandler(bot, ADMIN_CHAT_ID)
-user_statistics_handler = UserStatisticsHandler(bot)
 records_handler = RecordsHandler(bot)
 social_media_handler = SocialMediaHandler(bot)
 
+# из файла UserStatisticsHandler.py
+unique_users_handler = UniqueUsersStatisticsHandler(bot)
+repeat_visits_handler = RepeatVisitsStatisticsHandler(bot)
+inactive_users_handler = InactiveUsersStatisticsHandler(bot)
+visited_sections_handler = VisitedSectionsStatisticsHandler(bot)
 
 
 
@@ -270,24 +280,6 @@ def handle_get_contact(call):
     """Обрабатывает нажатие на 'Узнать подробнее'."""
     procedures_handler.handle_booking_procedure(call)
 
-@bot.message_handler(func=lambda message: message.text == "👥 Посмотреть пользователей")
-def handle_view_users(message):
-    """Обрабатывает нажатие на 'Посмотреть пользователей'."""
-    bot.delete_message(message.chat.id, message.message_id)
-    user_statistics_handler.show_statistics(message)
-
-@bot.callback_query_handler(func=lambda call: call.data in ["unique_users", "repeat_visits", "inactive_users"])
-def handle_statistics_detail(call):
-    """Обрабатывает нажатие на ссылки статистики."""
-    bot.answer_callback_query(call.id)  # Убираем индикатор загрузки
-    user_statistics_handler.handle_detailed_statistics(call)
-
-
-@bot.callback_query_handler(func=lambda call: call.data == "back_to_stats")
-def handle_back_to_stats(call):
-    """Возвращает в главное меню статистики."""
-    user_statistics_handler.show_statistics(call.message)
-
 @bot.message_handler(func=lambda message: message.text == "📋 Отобразить записи")
 def handle_show_records(message):
     """Обрабатывает нажатие на 'Отобразить записи'."""
@@ -301,13 +293,67 @@ def handle_social_media(message):
     social_media_handler.show_social_media(message)
 
 
+
+
+
+
+
+
+
+@bot.message_handler(func=lambda message: message.text == "👥 Посмотреть пользователей")
+def handle_view_users(message):
+    """Обрабатывает нажатие на 'Посмотреть пользователей'."""
+    bot.delete_message(message.chat.id, message.message_id)
+    # Общий метод для отображения статистики
+    base_statistics_handler = BaseStatisticsHandler(bot)
+    base_statistics_handler.show_statistics(message)
+
+@bot.callback_query_handler(func=lambda call: call.data == "unique_users")
+def handle_unique_users(call):
+    """Обрабатывает запрос на уникальных пользователей."""
+    bot.answer_callback_query(call.id)
+    unique_users_handler.pending_section[call.message.chat.id] = "unique_users"
+    unique_users_handler.request_date_range_unique_user(call)
+
+@bot.callback_query_handler(func=lambda call: call.data == "repeat_visits")
+def handle_repeat_visits(call):
+    """Обрабатывает запрос на повторные посещения."""
+    bot.answer_callback_query(call.id)
+    repeat_visits_handler.handle_statistics(call)
+
+@bot.callback_query_handler(func=lambda call: call.data == "inactive_users")
+def handle_inactive_users(call):
+    """Обрабатывает запрос на неактивных пользователей."""
+    bot.answer_callback_query(call.id)
+    inactive_users_handler.pending_section[call.message.chat.id] = "inactive_users"
+    inactive_users_handler.request_date_range_inactive_users(call)
+
+@bot.callback_query_handler(func=lambda call: call.data == "section_stats")
+def handle_visited_sections(call):
+    """Обрабатывает запрос на посещённые разделы."""
+    bot.answer_callback_query(call.id)
+    visited_sections_handler.handle_statistics(call)
+
+@bot.callback_query_handler(func=lambda call: call.data == "back_to_menu")
+def handle_back_to_menu(call):
+    """Возвращает в главное меню статистики."""
+    base_statistics_handler = BaseStatisticsHandler(bot)
+    base_statistics_handler.handle_back_to_menu(call)
+
 @bot.message_handler(content_types=['text'])
 def handle_text_message(message):
-    # Проверяем, ожидает ли бот ввода даты для статистики
-    if message.chat.id in user_statistics_handler.pending_section:
-        user_statistics_handler.process_date_input(message)
+    """Обрабатывает текстовые сообщения."""
+    # Проверяем, ожидает ли бот ввода даты для уникальных пользователей
+    if message.chat.id in unique_users_handler.pending_section:
+        unique_users_handler.process_date_input_unique_users(message)
+    elif message.chat.id in inactive_users_handler.pending_section:
+        inactive_users_handler.process_date_input_inactive_users(message)
     else:
-        bot.send_message(message.chat.id, "❌ Неизвестная команда. Пожалуйста, выберите раздел из меню.")
+        bot.send_message(
+            message.chat.id,
+            "❌ Неизвестная команда. Пожалуйста, выберите раздел из меню.",
+            parse_mode="HTML"
+        )
 
 
 # Запуск бота

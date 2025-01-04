@@ -236,52 +236,64 @@ def get_unique_users():
     ]
 
 def get_repeat_visits():
-    """Возвращает количество пользователей с повторными посещениями."""
+    """
+    Возвращает список пользователей с повторной активностью.
+    """
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT COUNT(*) FROM (
-            SELECT telegram_user_id, COUNT(*) as visit_count
-            FROM user_visits
-            GROUP BY telegram_user_id
-            HAVING visit_count > 1
-        );
-    """)
-    result = cursor.fetchone()[0]
-    conn.close()
-    return result
-
-def get_inactive_users():
-    """Возвращает список неактивных пользователей (не заходивших более 30 дней)."""
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-
-    # Получаем текущую дату и время
-    current_time = datetime.now(pytz.timezone(TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
-
-    # Фильтруем пользователей, которые неактивны более 30 дней
-    cursor.execute("""
-        SELECT telegram_user_id, username, first_name, last_name, visit_date, unique_until
+    query = """
+        SELECT telegram_user_id, username, first_name, last_name, MAX(visit_date) as last_visit, COUNT(*)
         FROM user_visits
-        WHERE visit_date <= datetime(?, '-30 days');
-    """, (current_time,))
-
-    users = cursor.fetchall()
+        GROUP BY telegram_user_id
+        HAVING COUNT(*) > 1
+    """
+    cursor.execute(query)
+    result = cursor.fetchall()
     conn.close()
 
-    # Преобразуем данные в удобный формат
     return [
         {
-            "telegram_user_id": user[0],
-            "username": user[1],
-            "first_name": user[2],
-            "last_name": user[3],
-            "visit_date": user[4],
-            "unique_until": user[5],
+            "telegram_user_id": row[0],
+            "username": row[1],
+            "first_name": row[2],
+            "last_name": row[3],
+            "visit_date": row[4]
         }
-        for user in users
+        for row in result
     ]
+
+
+def get_inactive_users(start_date, end_date):
+    """
+    Возвращает список неактивных пользователей за указанный период.
+    """
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    query = """
+        SELECT telegram_user_id, username, first_name, last_name, MAX(visit_date) as last_visit
+        FROM user_visits
+        WHERE DATE(visit_date) NOT BETWEEN ? AND ?
+        GROUP BY telegram_user_id
+    """
+
+    cursor.execute(query, (start_date, end_date))
+    result = cursor.fetchall()
+    conn.close()
+
+    # Преобразуем результат в читаемый формат
+    return [
+        {
+            "telegram_user_id": row[0],
+            "username": row[1],
+            "first_name": row[2],
+            "last_name": row[3],
+            "visit_date": row[4]
+        }
+        for row in result
+    ]
+
 
 
 def log_user_action(user_id, username, first_name, last_name, action_type, action_details=None):
