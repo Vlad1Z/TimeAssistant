@@ -345,6 +345,59 @@ def get_records_from_today():
         for row in rows
     ]
 
+
+
+
+
+
+def get_users_by_date_range(start_date, end_date, unique=False, repeat=False, inactive=False):
+    """Получает пользователей по диапазону дат с опциональной фильтрацией."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    base_query = """
+        SELECT telegram_user_id, username, first_name, last_name, visit_date
+        FROM user_visits
+        WHERE DATE(visit_date) BETWEEN ? AND ?
+    """
+
+    if unique:
+        # Уникальные пользователи
+        query = f"{base_query} GROUP BY telegram_user_id"
+    elif repeat:
+        # Повторные посещения
+        query = f"""
+            SELECT telegram_user_id, username, first_name, last_name, MAX(visit_date) as last_visit, COUNT(*)
+            FROM user_visits
+            WHERE DATE(visit_date) BETWEEN ? AND ?
+            GROUP BY telegram_user_id
+            HAVING COUNT(*) > 1
+        """
+    elif inactive:
+        # Неактивные пользователи (не заходили более 30 дней)
+        query = f"{base_query} AND DATE(visit_date) < DATE('now', '-30 days')"
+    else:
+        # Все пользователи
+        query = base_query
+
+    cursor.execute(query, (start_date, end_date))
+    result = cursor.fetchall()
+    conn.close()
+
+    # Преобразуем результат в читаемый формат
+    return [
+        {
+            "telegram_user_id": row[0],
+            "username": row[1],
+            "first_name": row[2],
+            "last_name": row[3],
+            "visit_date": row[4]
+        }
+        for row in result
+    ]
+
+
+
 # ===== Инициализация базы данных =====
 if __name__ == "__main__":
     create_tables()

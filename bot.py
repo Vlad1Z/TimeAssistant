@@ -301,6 +301,15 @@ def handle_social_media(message):
     social_media_handler.show_social_media(message)
 
 
+@bot.message_handler(content_types=['text'])
+def handle_text_message(message):
+    # Проверяем, ожидает ли бот ввода даты для статистики
+    if message.chat.id in user_statistics_handler.pending_section:
+        user_statistics_handler.process_date_input(message)
+    else:
+        bot.send_message(message.chat.id, "❌ Неизвестная команда. Пожалуйста, выберите раздел из меню.")
+
+
 # Запуск бота
 if __name__ == "__main__":
     try:
