@@ -48,13 +48,9 @@ def create_tables():
         last_name TEXT,
         visit_date DATETIME,
         unique_until DATETIME,
-        last_action TEXT
+        action_type TEXT,
+        action_details TEXT
     );
-    """)
-
-    # Добавление уникального индекса для telegram_user_id
-    cursor.execute("""
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_telegram_user_id ON user_visits(telegram_user_id);
     """)
 
     conn.commit()
@@ -296,18 +292,16 @@ def log_user_action(user_id, username, action_type, action_details=None):
     action_time = datetime.now(pytz.timezone(TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
     unique_until = (datetime.now(pytz.timezone(TIMEZONE)) + timedelta(days=3)).strftime('%Y-%m-%d %H:%M:%S')
 
-    # Обновляем или создаем запись
+    # Добавляем новую запись без обновления существующих
     cursor.execute("""
-        INSERT INTO user_visits (telegram_user_id, username, visit_date, unique_until, last_action)
-        VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(telegram_user_id) DO UPDATE SET
-            visit_date = excluded.visit_date,
-            unique_until = excluded.unique_until,
-            last_action = excluded.last_action;
-    """, (user_id, username, action_time, unique_until, action_type))
+        INSERT INTO user_visits (telegram_user_id, username, visit_date, unique_until, action_type, action_details)
+        VALUES (?, ?, ?, ?, ?, ?);
+    """, (user_id, username, action_time, unique_until, action_type, action_details))
 
     conn.commit()
     conn.close()
+
+
 
 
 # Вспомогательная функция для получения записей из базы данных
