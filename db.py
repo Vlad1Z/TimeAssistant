@@ -284,22 +284,23 @@ def get_inactive_users():
     ]
 
 
-def log_user_action(user_id, username, action_type, action_details=None):
+def log_user_action(user_id, username, first_name, last_name, action_type, action_details=None):
+    """Логирует действия пользователя в базу данных."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
     # Текущее время для логирования
     action_time = datetime.now(pytz.timezone(TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
-    unique_until = (datetime.now(pytz.timezone(TIMEZONE)) + timedelta(days=3)).strftime('%Y-%m-%d %H:%M:%S')
 
-    # Добавляем новую запись без обновления существующих
+    # Добавляем запись в таблицу
     cursor.execute("""
-        INSERT INTO user_visits (telegram_user_id, username, visit_date, unique_until, action_type, action_details)
-        VALUES (?, ?, ?, ?, ?, ?);
-    """, (user_id, username, action_time, unique_until, action_type, action_details))
+        INSERT INTO user_visits (telegram_user_id, username, first_name, last_name, visit_date, action_type, action_details)
+        VALUES (?, ?, ?, ?, ?, ?, ?);
+    """, (user_id, username, first_name, last_name, action_time, action_type, action_details))
 
     conn.commit()
     conn.close()
+
 
 
 

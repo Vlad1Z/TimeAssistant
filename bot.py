@@ -9,7 +9,8 @@ from handlers.ProceduresHandler import ProceduresHandler
 from handlers.UserStatisticsHandler import UserStatisticsHandler
 from handlers.RecordsHandler import RecordsHandler
 from handlers.SocialMediaHandler import SocialMediaHandler
-from db import save_user_visit, get_user_data_by_record_id, update_appointment, log_user_action, get_records_from_today
+from db import save_user_visit, get_user_data_by_record_id, update_appointment, get_records_from_today
+from handlers.Logger import log_action
 
 
 # Настроим логирование
@@ -36,19 +37,13 @@ social_media_handler = SocialMediaHandler(bot)
 
 # Обработчик команды /start
 @bot.message_handler(commands=['start'])
+@log_action(action_type="start_command", action_details="Запуст бота")
 def handle_start(message):
     """Обрабатывает команду /start (при первом взаимодействии с ботом)."""
-    user_id = message.from_user.id
-    username = message.from_user.username
-    first_name = message.from_user.first_name
-    last_name = message.from_user.last_name
-
-    # Логируем информацию о пользователе
-    save_user_visit(user_id, username, first_name, last_name)
-
     start_handler.main_menu(message)
 
 @bot.message_handler(func=lambda message: message.text == "🙏 Спасибо, вернуться позже")
+@log_action(action_type="menu_click", action_details="Спасибо, вернуться позже")
 def handle_exit(message):
     """Обрабатывает нажатие на кнопку 'Спасибо, вернуться позже'."""
     # Создаем клавиатуру с одной кнопкой "Запустить"
@@ -65,13 +60,12 @@ def handle_exit(message):
     )
 
 @bot.message_handler(func=lambda message: message.text == "🚀 Запустить")
+@log_action(action_type="button_click", action_details="Возвращение в бота")
 def handle_restart(message):
     start_handler.main_menu(message)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("record_"))
 def handle_admin_booking(call):
-    log_user_action(user_id=call.message.chat.id, username=call.from_user.username, action_type="inline_button",
-                    action_details=f"Нажата кнопка: {call.data}")
     # Ваш код обработки инлайн-кнопки
     """Обрабатывает нажатие на кнопку 'Записать'."""
     try:
@@ -170,9 +164,6 @@ def handle_booking_confirmation(call):
         print(f"Ошибка при редактировании сообщения: {e}")
 
 
-
-
-
 def process_cancel_booking(record_id, call=None):
     """
     Обрабатывает отклонение заявки.
@@ -242,16 +233,16 @@ def handle_confirmation(message):
     """Обрабатывает подтверждения от пользователя."""
     booking_handler.process_action(message)
 
-# Обработчик для запроса доступных слотов
+
 @bot.message_handler(func=lambda message: message.text == "📅 Узнать о свободных слотах")
+@log_action(action_type="menu_click", action_details="Узнать о свободных слотах")
 def handle_user_request(message):
     """Обрабатывает запрос от пользователя."""
-    log_user_action(user_id=message.chat.id, username=message.from_user.username, action_type="menu_click",
-                    action_details="Узнать о свободных слотах")
     user_request_handler.start_request(message)
 
 # Обработчик для получения контакта
 @bot.message_handler(content_types=['contact'])
+@log_action(action_type="button_click", action_details="Отправить номер телефона")
 def handle_contact_message(message):
     """Передает контактное сообщение в UserRequestHandler."""
     # Логируем полученные данные для отладки
@@ -262,10 +253,9 @@ def handle_contact_message(message):
 
 # Обработчик кнопки "Виды процедур"
 @bot.message_handler(func=lambda message: message.text == "✨ Виды процедур")
+@log_action(action_type="menu_click", action_details="Виды процедур")
 def handle_procedures(message):
     """Обрабатывает нажатие на кнопку 'Виды процедур'."""
-    log_user_action(user_id=message.chat.id, username=message.from_user.username, action_type="menu_click",
-                    action_details="Виды процедур")
     procedures_handler.show_procedures(message)
 
 # Обработчик кнопки "Записаться" в описании процедур
@@ -275,6 +265,7 @@ def handle_procedure_booking(call):
     procedures_handler.handle_booking_procedure(call)
 
 @bot.callback_query_handler(func=lambda call: call.data == "get_contact")
+@log_action(action_type="button_click", action_details="Узнать подробнее")
 def handle_get_contact(call):
     """Обрабатывает нажатие на 'Узнать подробнее'."""
     procedures_handler.handle_booking_procedure(call)
@@ -292,10 +283,6 @@ def handle_statistics_detail(call):
     user_statistics_handler.handle_detailed_statistics(call)
 
 
-@bot.callback_query_handler(func=lambda call: True)
-def handle_callback(call):
-    log_user_action(user_id=call.message.chat.id, username=call.from_user.username, action_type="button_click", action_details=call.data)
-
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_stats")
 def handle_back_to_stats(call):
     """Возвращает в главное меню статистики."""
@@ -308,14 +295,9 @@ def handle_show_records(message):
     records_handler.show_records(message)
 
 @bot.message_handler(func=lambda message: message.text == "🌐 Другие соц сети")
+@log_action(action_type="button_click", action_details="Другие соц сети")
 def handle_social_media(message):
     """Обрабатывает нажатие на кнопку 'Другие соц сети'."""
-    log_user_action(
-        user_id=message.chat.id,
-        username=message.from_user.username,
-        action_type="menu_click",
-        action_details="Социальные сети"
-    )
     social_media_handler.show_social_media(message)
 
 
