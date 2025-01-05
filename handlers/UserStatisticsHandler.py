@@ -140,29 +140,24 @@ class RepeatVisitsStatisticsHandler(BaseStatisticsHandler):
     def generate_statistics_repeat_visits(self, chat_id):
         """
         Генерирует статистику повторных посещений.
-        - Выводит пользователей с повторной активностью (например, заходили в бота несколько раз).
+        - Проверяет, оставляли ли пользователи номер телефона и возвращает дату действия, если оно есть.
         """
-        stats = get_repeat_visits()  # Предполагается, что возвращает список записей
-
-        if isinstance(stats, int):  # Если вернулось число вместо списка
-            self.bot.send_message(
-                chat_id,
-                f"📊 Повторных посещений: {stats}",
-                parse_mode="HTML"
-            )
-            return
+        stats = get_repeat_visits()
 
         if stats:
             readable_stats = "\n\n".join([
                 f"👤 Имя: {user['first_name']} {user['last_name'] or ''}\n"
                 f"📧 Username: @{user['username'] if user['username'] else 'Не указан'}\n"
                 f"🆔 ID: <code>{user['telegram_user_id']}</code>\n"
-                f"🕒 Последний визит: {datetime.strptime(user['visit_date'], '%Y-%m-%d %H:%M:%S').strftime('%d.%m.%Y %H:%M')}"
+                f"🕒 Последний визит: {datetime.strptime(user['visit_date'], '%Y-%m-%d %H:%M:%S').strftime('%d.%m.%Y %H:%M')}\n"
+                f"📞 Отправлял телефон: "
+                f"{datetime.strptime(user['phone_action_date'], '%Y-%m-%d %H:%M:%S').strftime('%d.%m.%Y %H:%M') if user['phone_action_date'] else 'Нет'}\n"
+                f"🔢 Общее количество визитов: {user['visit_count']}"
                 for user in stats
             ])
             self.bot.send_message(
                 chat_id,
-                f"📊 Статистика повторных посещений:\n\n{readable_stats}",
+                f"📊 Статистика пользователей с повторной активностью:\n\n{readable_stats}",
                 parse_mode="HTML"
             )
         else:
@@ -171,6 +166,7 @@ class RepeatVisitsStatisticsHandler(BaseStatisticsHandler):
                 "❌ Нет данных о повторных посещениях.",
                 parse_mode="HTML"
             )
+
 
 class InactiveUsersStatisticsHandler(BaseStatisticsHandler):
     """

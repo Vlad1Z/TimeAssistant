@@ -237,15 +237,22 @@ def get_unique_users():
 
 def get_repeat_visits():
     """
-    Возвращает список пользователей с повторной активностью.
+    Возвращает список пользователей с повторной активностью, включая данные о том, оставляли ли они номер телефона.
     """
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
     query = """
-        SELECT telegram_user_id, username, first_name, last_name, MAX(visit_date) as last_visit, COUNT(*)
-        FROM user_visits
-        GROUP BY telegram_user_id
+        SELECT 
+            uv.telegram_user_id, 
+            uv.username, 
+            uv.first_name, 
+            uv.last_name, 
+            MAX(uv.visit_date) as last_visit, 
+            MAX(CASE WHEN uv.action_details = 'Отправить номер телефона' THEN uv.visit_date END) as phone_action_date, 
+            COUNT(*) as visit_count
+        FROM user_visits uv
+        GROUP BY uv.telegram_user_id
         HAVING COUNT(*) > 1
     """
     cursor.execute(query)
@@ -258,10 +265,14 @@ def get_repeat_visits():
             "username": row[1],
             "first_name": row[2],
             "last_name": row[3],
-            "visit_date": row[4]
+            "visit_date": row[4],
+            "phone_action_date": row[5],  # Дата, когда пользователь отправлял номер телефона (или None)
+            "visit_count": row[6]
         }
         for row in result
     ]
+
+
 
 
 def get_inactive_users(start_date, end_date):
