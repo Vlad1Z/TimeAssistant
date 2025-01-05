@@ -344,16 +344,19 @@ def handle_back_to_menu(call):
 def handle_text_message(message):
     """Обрабатывает текстовые сообщения."""
     # Проверяем, ожидает ли бот ввода даты для уникальных пользователей
-    if message.chat.id in unique_users_handler.pending_section:
-        unique_users_handler.process_date_input_unique_users(message)
-    elif message.chat.id in inactive_users_handler.pending_section:
+    if message.chat.id in inactive_users_handler.pending_section:
+        # Сначала проверяем неактивных пользователей
         inactive_users_handler.process_date_input_inactive_users(message)
+    elif message.chat.id in unique_users_handler.pending_section:
+        # Затем уникальных пользователей
+        unique_users_handler.process_date_input_unique_users(message)
     else:
         bot.send_message(
             message.chat.id,
             "❌ Неизвестная команда. Пожалуйста, выберите раздел из меню.",
             parse_mode="HTML"
         )
+
 
 
 # Запуск бота

@@ -111,7 +111,7 @@ class UniqueUsersStatisticsHandler(BaseStatisticsHandler):
                 f"👤 Имя: {user['first_name']} {user['last_name'] or ''}\n"
                 f"📧 Username: @{user['username'] if user['username'] else 'Не указан'}\n"
                 f"🆔 ID: <code>{user['telegram_user_id']}</code>\n"
-                f"🕒 Последний визит: {user['visit_date']}"
+                f"🕒 Последний визит: {datetime.strptime(user['visit_date'], '%Y-%m-%d %H:%M:%S').strftime('%d.%m.%Y %H:%M')}"
                 for user in stats
             ])
             self.bot.send_message(
@@ -157,7 +157,7 @@ class RepeatVisitsStatisticsHandler(BaseStatisticsHandler):
                 f"👤 Имя: {user['first_name']} {user['last_name'] or ''}\n"
                 f"📧 Username: @{user['username'] if user['username'] else 'Не указан'}\n"
                 f"🆔 ID: <code>{user['telegram_user_id']}</code>\n"
-                f"🕒 Последний визит: {user['visit_date']}"
+                f"🕒 Последний визит: {datetime.strptime(user['visit_date'], '%Y-%m-%d %H:%M:%S').strftime('%d.%m.%Y %H:%M')}"
                 for user in stats
             ])
             self.bot.send_message(
@@ -241,7 +241,7 @@ class InactiveUsersStatisticsHandler(BaseStatisticsHandler):
                 f"👤 Имя: {user['first_name']} {user['last_name'] or ''}\n"
                 f"📧 Username: @{user['username'] if user['username'] else 'Не указан'}\n"
                 f"🆔 ID: <code>{user['telegram_user_id']}</code>\n"
-                f"🕒 Последний визит: {user['visit_date']}"
+                f"🕒 Последний визит: {datetime.strptime(user['visit_date'], '%Y-%m-%d %H:%M:%S').strftime('%d.%m.%Y %H:%M')}"
                 for user in stats
             ])
             self.bot.send_message(
