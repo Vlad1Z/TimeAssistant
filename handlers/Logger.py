@@ -1,4 +1,5 @@
 from db import log_user_action
+from config import id_chat_owner
 
 
 # Декоратор для логирования
@@ -22,6 +23,11 @@ def log_action(action_type, action_details=None):
                 else:
                     # Неподдерживаемый тип
                     return func(*args, **kwargs)
+
+                # Исключение для администратора
+                if str(user_id) == id_chat_owner:
+                    return func(*args, **kwargs)
+
                 log_user_action(user_id, username, first_name, last_name, action_type, action_details)
             return func(*args, **kwargs)
         return wrapper
