@@ -144,6 +144,17 @@ def handle_booking_confirmation(call):
             f"💬 Комментарий: {booking_handler.comments if booking_handler.comments else 'Нет комментариев'}"
         )
 
+        # Уведомляем клиента
+        bot.send_message(
+            user_data['telegram_user_id'],
+            f"🎉 Вы успешно записаны!\n\n"
+            f"📅 Дата: {booking_handler.selected_date.strftime('%d.%m.%y')}\n"
+            f"⏰ Время: {booking_handler.selected_time}\n"
+            f"📍 Адрес: [Укажите адрес]\n"
+            f"📞 Контакт: [Укажите телефон]\n\n"
+            "Спасибо за запись! 😊"
+        )
+
     elif action == "cancel":
         # Обновляем запись в базе данных
         update_appointment(
