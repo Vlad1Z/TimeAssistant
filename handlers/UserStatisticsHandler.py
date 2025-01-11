@@ -26,8 +26,8 @@ class BaseStatisticsHandler:
         markup.add(types.InlineKeyboardButton("👥 Уникальные пользователи", callback_data="unique_users"))
         markup.add(types.InlineKeyboardButton("🔄 Повторные посещения", callback_data="repeat_visits"))
         markup.add(types.InlineKeyboardButton("📭 Неактивные пользователи", callback_data="inactive_users"))
-        markup.add(types.InlineKeyboardButton("📊 Посещенные разделы", callback_data="section_stats"))
-        markup.add(types.InlineKeyboardButton("🔙 Вернуться в главное меню", callback_data="back_to_menu"))
+        # markup.add(types.InlineKeyboardButton("📊 Посещенные разделы", callback_data="section_stats"))
+        # markup.add(types.InlineKeyboardButton("🔙 Вернуться в главное меню", callback_data="back_to_menu"))
 
         self.bot.send_message(
             message.chat.id,
